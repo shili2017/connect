@@ -1,1 +1,12 @@
 *.hex
+obj
+build
+scripts
+*.log
+*.gv
+*.svg
+double*.bsv
+fat*.bsv
+star*.bsv
+torus*.bsv
+mesh*.bsv
