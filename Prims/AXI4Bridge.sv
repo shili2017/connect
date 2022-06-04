@@ -12,14 +12,12 @@ module AXI4MasterBridge (
     // InPortSimple send port
     output [`FLIT_WIDTH - 1 : 0]  put_flit,
     output                        put_flit_valid,
-    input  [`NUM_VCS - 1 : 0]     get_non_full_vcs,
-    output                        get_non_full_vcs_ready,
+    input                         put_flit_ready,
 
     // OutPortSimple recv port
     input  [`FLIT_WIDTH - 1 : 0]  get_flit,
-    output                        get_flit_ready,
-    output [`NUM_VCS - 1 : 0]     put_non_full_vcs,
-    output                        put_non_full_vcs_valid
+    input                         get_flit_valid,
+    output                        get_flit_ready
   );
 
   // State definitions
@@ -58,7 +56,7 @@ module AXI4MasterBridge (
           next_state = state;
       end
       WRESP1: begin
-        if (get_flit[`FLIT_WIDTH - 1]) // flit is valid
+        if (get_flit_valid)
           next_state = WRESP2;
         else
           next_state = state;
@@ -70,7 +68,7 @@ module AXI4MasterBridge (
           next_state = state;
       end
       RDATA1: begin
-        if (get_flit[`FLIT_WIDTH - 1]) // flit is valid
+        if (get_flit_valid)
           next_state = RDATA2;
         else
           next_state = state;
@@ -176,12 +174,9 @@ module AXI4MasterBridge (
   // InPortSimple output signal
   assign put_flit               = {put_flit_valid, 1'b1, put_flit_dst, 1'b0, put_flit_data};
   assign put_flit_valid         = aw_fire || ar_fire || w_fire;
-  assign get_non_full_vcs_ready = 1;
 
   // OutPortSimple output signal
   assign get_flit_ready         = (state == WRESP1) || (state == RDATA1);
-  assign put_non_full_vcs       = {`NUM_VCS{get_flit_ready}};
-  assign put_non_full_vcs_valid = 1;
 
   // Debug
   axi_id_t     axi_awid;
@@ -287,14 +282,12 @@ module AXI4SlaveBridge (
     // InPortSimple send port
     output [`FLIT_WIDTH - 1 : 0]  put_flit,
     output                        put_flit_valid,
-    input  [`NUM_VCS - 1 : 0]     get_non_full_vcs,
-    output                        get_non_full_vcs_ready,
+    input                         put_flit_ready,
 
     // OutPortSimple recv port
     input  [`FLIT_WIDTH - 1 : 0]  get_flit,
-    output                        get_flit_ready,
-    output [`NUM_VCS - 1 : 0]     put_non_full_vcs,
-    output                        put_non_full_vcs_valid
+    input                         get_flit_valid,
+    output                        get_flit_ready
   );
 
   // State definitions
@@ -355,10 +348,10 @@ module AXI4SlaveBridge (
   end
 
   // FSM to handle AXI slave device status
-  always @(*) begin
+  always_comb begin
     case (state)
       IDLE: begin
-        if (get_flit[`FLIT_WIDTH - 1]) begin // flit is valid
+        if (get_flit_valid) begin
           if (get_flit[`FLIT_DATA_WIDTH - 1 : `FLIT_DATA_WIDTH - 3] == CHANNEL_AW)
             next_state = WADDR;
           else if (get_flit[`FLIT_DATA_WIDTH - 1 : `FLIT_DATA_WIDTH - 3] == CHANNEL_AR)
@@ -375,7 +368,7 @@ module AXI4SlaveBridge (
           next_state = state;
       end
       WDATA1: begin
-        if (get_flit[`FLIT_WIDTH - 1]) // flit is valid
+        if (get_flit_valid)
           next_state = WDATA2;
         else
           next_state = state;
@@ -476,12 +469,9 @@ module AXI4SlaveBridge (
   // InPortSimple output signal
   assign put_flit               = {put_flit_valid, 1'b1, put_flit_dst, 1'b0, put_flit_data};
   assign put_flit_valid         = b_fire || r_fire;
-  assign get_non_full_vcs_ready = 1;
 
   // OutPortSimple output signal
   assign get_flit_ready         = (state == IDLE) || (state == WDATA1);
-  assign put_non_full_vcs       = {`NUM_VCS{get_flit_ready}};
-  assign put_non_full_vcs_valid = 1;
 
   // Debug
   axi_id_t     axi_awid;
