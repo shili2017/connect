@@ -70,6 +70,31 @@ module NetworkIdealAXI4Wrapper (
 
   reg [15 : 0] cycle = 0;
 
+  wire [`FLIT_WIDTH - 1 : 0]  put_flit_0;
+  wire                        put_flit_0_valid;
+  wire                        put_flit_0_ready;
+  wire [`FLIT_WIDTH - 1 : 0]  get_flit_0;
+  wire                        get_flit_0_valid;
+  wire                        get_flit_0_ready;
+  wire [`FLIT_WIDTH - 1 : 0]  put_flit_1;
+  wire                        put_flit_1_valid;
+  wire                        put_flit_1_ready;
+  wire [`FLIT_WIDTH - 1 : 0]  get_flit_1;
+  wire                        get_flit_1_valid;
+  wire                        get_flit_1_ready;
+  wire [`FLIT_WIDTH - 1 : 0]  put_flit_2;
+  wire                        put_flit_2_valid;
+  wire                        put_flit_2_ready;
+  wire [`FLIT_WIDTH - 1 : 0]  get_flit_2;
+  wire                        get_flit_2_valid;
+  wire                        get_flit_2_ready;
+  wire [`FLIT_WIDTH - 1 : 0]  put_flit_3;
+  wire                        put_flit_3_valid;
+  wire                        put_flit_3_ready;
+  wire [`FLIT_WIDTH - 1 : 0]  get_flit_3;
+  wire                        get_flit_3_valid;
+  wire                        get_flit_3_ready;
+
   always_ff @(posedge CLK) begin
     cycle <= cycle + 1;
     if (EN_send_ports_0_putFlit)
@@ -105,32 +130,25 @@ module NetworkIdealAXI4Wrapper (
       $display("%d: Port 2 put a credit", cycle);
     if (EN_recv_ports_3_putCredits)
       $display("%d: Port 3 put a credit", cycle);
-  end
 
-  wire [`FLIT_WIDTH - 1 : 0]  put_flit_0;
-  wire                        put_flit_0_valid;
-  wire                        put_Flit_0_ready;
-  wire [`FLIT_WIDTH - 1 : 0]  get_flit_0;
-  wire                        get_flit_0_valid;
-  wire                        get_Flit_0_ready;
-  wire [`FLIT_WIDTH - 1 : 0]  put_flit_1;
-  wire                        put_flit_1_valid;
-  wire                        put_Flit_1_ready;
-  wire [`FLIT_WIDTH - 1 : 0]  get_flit_1;
-  wire                        get_flit_1_valid;
-  wire                        get_Flit_1_ready;
-  wire [`FLIT_WIDTH - 1 : 0]  put_flit_2;
-  wire                        put_flit_2_valid;
-  wire                        put_Flit_2_ready;
-  wire [`FLIT_WIDTH - 1 : 0]  get_flit_2;
-  wire                        get_flit_2_valid;
-  wire                        get_Flit_2_ready;
-  wire [`FLIT_WIDTH - 1 : 0]  put_flit_3;
-  wire                        put_flit_3_valid;
-  wire                        put_Flit_3_ready;
-  wire [`FLIT_WIDTH - 1 : 0]  get_flit_3;
-  wire                        get_flit_3_valid;
-  wire                        get_Flit_3_ready;
+    if (put_flit_0_valid && put_flit_0_ready)
+      $display("%d: Device 0 send flit %x", cycle, put_flit_0);
+    if (put_flit_1_valid && put_flit_1_ready)
+      $display("%d: Device 1 send flit %x", cycle, put_flit_1);
+    if (put_flit_2_valid && put_flit_2_ready)
+      $display("%d: Device 2 send flit %x", cycle, put_flit_2);
+    if (put_flit_3_valid && put_flit_3_ready)
+      $display("%d: Device 3 send flit %x", cycle, put_flit_3);
+
+    if (get_flit_0_valid && get_flit_0_ready)
+      $display("%d: Device 0 recv flit %x", cycle, get_flit_0);
+    if (get_flit_1_valid && get_flit_1_ready)
+      $display("%d: Device 1 recv flit %x", cycle, get_flit_1);
+    if (get_flit_2_valid && get_flit_2_ready)
+      $display("%d: Device 2 recv flit %x", cycle, get_flit_2);
+    if (get_flit_3_valid && get_flit_3_ready)
+      $display("%d: Device 3 recv flit %x", cycle, get_flit_3);
+  end
 
   InPortFIFO b0_in_fifo (
     .CLK,

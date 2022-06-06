@@ -112,9 +112,9 @@ module CONNECT_testbench_sample_axi4;
   end
 
   task test_write;
-    for (int i = 0; i < 4; i++) begin
+    for (int i = 0; i < 8; i++) begin
       if (d2.buffer[addr_m0 + i] != data + i) flag_w = 0;
-      $display("actual:%h expected:%h\n", d2.buffer[addr_m0 + i], data + i);
+      $display("actual:%h expected:%h", d2.buffer[addr_m0 + i], data + i);
     end
 
     if (flag_w) $display("Pass");
@@ -122,9 +122,9 @@ module CONNECT_testbench_sample_axi4;
   endtask : test_write
 
   task test_read;
-    for (int i = 0; i < 4; i++) begin
+    for (int i = 0; i < 8; i++) begin
       if (d1.rdata[addr_m1 + i] != data + i) flag_r = 0;
-      $display("actual:%h expected:%h\n", d1.rdata[addr_m1 + i], data + i);
+      $display("actual:%h expected:%h", d1.rdata[addr_m1 + i], data + i);
     end
 
     if (flag_r) $display("Pass");

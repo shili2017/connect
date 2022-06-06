@@ -3,112 +3,113 @@
 import axi4_pkg::*;
 
 module AXI4MasterDevice #(parameter ID = 0) (
-	input CLK,
-	input RST_N,
-	axi_interface.master axi,
-	input logic start_read,
-	input logic start_write,
+  input CLK,
+  input RST_N,
+  axi_interface.master axi,
+  input logic start_read,
+  input logic start_write,
   input axi_addr_t addr
 );
 
-	typedef enum logic [2 : 0] {IDLE, RADDR, RDATA, WADDR, WDATA, WRESP} state_type;
-	state_type state, next_state;
+  typedef enum logic [2 : 0] {IDLE, RADDR, RDATA, WADDR, WDATA, WRESP} state_type;
+  state_type state, next_state;
 
-	localparam LEN = 4;
+  localparam LEN = 8;
 
-	axi_data_t data = 64'hdeadbeefdeadbeef;
-	axi_len_t len_cnt;
-	axi_data_t rdata [0 : 7];
-	logic [2 : 0] rdata_cnt;
-	logic start_read_delay, start_write_delay;
+  axi_data_t data = 64'hdeadbeefdeadbeef;
+  axi_len_t len_cnt;
+  axi_data_t rdata [0 : 15];
+  logic [3 : 0] rdata_cnt;
+  logic start_read_delay, start_write_delay;
 
-	// AR
+  // AR
   assign axi.arid = ID;
-	assign axi.araddr  = (state == RADDR) ? addr : 32'h0;
-	assign axi.arlen = LEN - 1;
-	assign axi.arsize = AXSIZE_8;
-	assign axi.arburst = BURST_INCR;
+  assign axi.araddr  = (state == RADDR) ? addr : 32'h0;
+  assign axi.arlen = LEN - 1;
+  assign axi.arsize = AXSIZE_8;
+  assign axi.arburst = BURST_INCR;
   assign axi.arlock = 0;
   assign axi.arcache = 0;
   assign axi.arprot = 0;
   assign axi.arqos = 0;
   assign axi.arregion = 0;
   assign axi.aruser = 0;
-	assign axi.arvalid = (state == RADDR);
+  assign axi.arvalid = (state == RADDR);
 
-	// R
-	assign axi.rready = (state == RDATA);
+  // R
+  assign axi.rready = (state == RDATA);
 
-	// AW
+  // AW
   assign axi.awid = ID;
-	assign axi.awaddr  = (state == WADDR) ? addr : 32'h0;
-	assign axi.awlen = LEN - 1;
-	assign axi.awsize = AXSIZE_8;
-	assign axi.awburst = BURST_INCR;
+  assign axi.awaddr  = (state == WADDR) ? addr : 32'h0;
+  assign axi.awlen = LEN - 1;
+  assign axi.awsize = AXSIZE_8;
+  assign axi.awburst = BURST_INCR;
   assign axi.awlock = 0;
   assign axi.awcache = 0;
   assign axi.awprot = 0;
   assign axi.awqos = 0;
   assign axi.awregion = 0;
   assign axi.awuser = 0;
-	assign axi.awvalid = (state == WADDR);
+  assign axi.awvalid = (state == WADDR);
 
-	// W
+  // W
   assign axi.wid = 0;
-	assign axi.wdata = (state == WDATA) ? data + len_cnt : 32'h0;
-	assign axi.wstrb = 8'hff;
-	assign axi.wlast = (state == WDATA && len_cnt == LEN);
+  assign axi.wdata = (state == WDATA) ? data + len_cnt : 32'h0;
+  assign axi.wstrb = 8'hff;
+  assign axi.wlast = (state == WDATA && len_cnt == LEN - 1);
   assign axi.wuser = 0;
-	assign axi.wvalid = (state == WDATA);
+  assign axi.wvalid = (state == WDATA);
 
-	// B
-	assign axi.bready = (state == WRESP);
+  // B
+  assign axi.bready = (state == WRESP);
 
-	always_ff @(posedge CLK) begin
-		if (~RST_N) begin
-			for (int i = 0; i < 8; i++) begin
-				rdata[i] <= 32'h0;
-			end
-			rdata_cnt <= 0;
-			len_cnt <= 0;
-		end else begin
-			if (state == RDATA && axi.rvalid  && axi.rready) begin
-				rdata[addr + rdata_cnt] <= axi.rdata;
-				rdata_cnt <= rdata_cnt + 1;
-			end
-			if (state == WDATA && axi.wvalid  && axi.wready) len_cnt <= len_cnt + 1;
-		end
-	end
+  always_ff @(posedge CLK) begin
+    if (~RST_N) begin
+      for (int i = 0; i < 16; i++) begin
+        rdata[i] <= 0;
+      end
+      rdata_cnt <= 0;
+      len_cnt <= 0;
+    end else begin
+      if (state == RDATA && axi.rvalid && axi.rready) begin
+        rdata[addr + rdata_cnt] <= axi.rdata;
+        rdata_cnt <= rdata_cnt + 1;
+      end
+      if (state == WDATA && axi.wvalid && axi.wready)
+        len_cnt <= len_cnt + 1;
+    end
+  end
 
-	always_ff @(posedge CLK) begin
-		if (~RST_N) begin
-			start_read_delay  <= 0;
-			start_write_delay <= 0;
-		end else begin
-			start_read_delay  <= start_read;
-			start_write_delay <= start_write;
-		end
-	end
+  always_ff @(posedge CLK) begin
+    if (~RST_N) begin
+      start_read_delay  <= 0;
+      start_write_delay <= 0;
+    end else begin
+      start_read_delay  <= start_read;
+      start_write_delay <= start_write;
+    end
+  end
 
-	always_comb begin
-		case (state)
-			IDLE : next_state = (start_read_delay) ? RADDR : ((start_write_delay) ? WADDR : IDLE);
-			RADDR : if (axi.arvalid && axi.arready) next_state = RDATA;
-			RDATA : if (axi.rvalid  && axi.rready && axi.rlast) next_state = IDLE;
-			WADDR : if (axi.awvalid && axi.awready) next_state = WDATA;
-			WDATA : if (axi.wvalid  && axi.wready && axi.wlast) next_state = WRESP;
-			WRESP : if (axi.bvalid  && axi.bready) next_state = IDLE;
-			default : next_state = IDLE;
-		endcase
-	end
+  always_comb begin
+    case (state)
+      IDLE : next_state = (start_read_delay) ? RADDR : ((start_write_delay) ? WADDR : IDLE);
+      RADDR : if (axi.arvalid && axi.arready) next_state = RDATA;
+      RDATA : if (axi.rvalid  && axi.rready && axi.rlast) next_state = IDLE;
+      WADDR : if (axi.awvalid && axi.awready) next_state = WDATA;
+      WDATA : if (axi.wvalid  && axi.wready && axi.wlast) next_state = WRESP;
+      WRESP : if (axi.bvalid  && axi.bready) next_state = IDLE;
+      default : next_state = IDLE;
+    endcase
+  end
 
-	always_ff @(posedge CLK) begin
-		if (!RST_N) begin
-			state <= IDLE;
-		end else begin
-			state <= next_state;
-		end
-	end
+  always_ff @(posedge CLK) begin
+    if (!RST_N) begin
+      state <= IDLE;
+    end else begin
+      state <= next_state;
+    end
+  end
 
   // Debug
   axi_id_t     axi_awid;
@@ -220,11 +221,11 @@ module AXI4SlaveDevice (
   axi_data_t data;
 
   axi_size_t len_cnt;
-  axi_data_t buffer[0 : 7];
+  axi_data_t buffer[0 : 15];
 
   always_ff @(posedge CLK) begin
     if (!RST_N) begin
-      for (int i = 0; i < 8; i++) begin
+      for (int i = 0; i < 16; i++) begin
         buffer[i] = 64'hdeadbeefdeadbeec + i;
       end
     end
