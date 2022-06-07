@@ -1,5 +1,75 @@
 `include "connect_parameters.v"
 
+`define USE_FIFO_IP
+
+`ifdef USE_FIFO_IP
+
+module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = `FLIT_WIDTH) (
+    input CLK,
+    input RST_N,
+
+    // Input
+    input  [DATA_WIDTH - 1 : 0] enq_data,
+    input                       enq_valid,
+    output                      enq_ready,
+
+    // Output
+    output [DATA_WIDTH - 1 : 0] deq_data,
+    output                      deq_valid,
+    input                       deq_ready
+  );
+
+  logic full, empty;
+
+  scfifo in_port_fifo (
+    .clock        (CLK        ),
+    .sclr         (!RST_N     ),
+    .aclr         (!RST_N     ),
+
+    // Input
+    .data         (enq_data   ),
+    .wrreq        (enq_valid  ),
+    .full         (full       ),
+
+    // Output
+    .q            (deq_data   ),
+    .rdreq        (deq_ready  ),
+    .empty        (empty      ),
+
+    // Misc
+    .eccstatus    (),
+    .usedw        (),
+    .almost_full  (),
+    .almost_empty ()
+  );
+
+  defparam in_port_fifo.lpm_width               = DATA_WIDTH;
+  defparam in_port_fifo.lpm_widthu              = $clog2(DEPTH);
+  defparam in_port_fifo.lpm_numwords            = DEPTH;
+  defparam in_port_fifo.lpm_showahead           = "ON";
+  defparam in_port_fifo.lpm_type                = "scfifo";
+  defparam in_port_fifo.intended_device_family  = "Stratix";
+  defparam in_port_fifo.underflow_checking      = "ON";
+  defparam in_port_fifo.overflow_checking       = "ON";
+  defparam in_port_fifo.allow_rwcycle_when_full = "ON";
+
+  assign enq_ready = !full;
+  assign deq_valid = !empty;
+
+  reg [15 : 0] cycle = 0;
+
+  always_ff @(posedge CLK) begin
+    cycle <= cycle + 1;
+    if (enq_valid && enq_ready)
+      $display("%d: [ENQ] data=%x", cycle, enq_data);
+    if (deq_valid && deq_ready)
+      $display("%d: [DEQ] data=%x", cycle, deq_data);
+  end
+
+endmodule
+
+`else
+
 module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = `FLIT_WIDTH) (
     input CLK,
     input RST_N,
@@ -92,6 +162,8 @@ module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = 
 
 endmodule
 
+`endif
+
 module InPortFIFO (
     input CLK,
     input RST_N,
@@ -107,6 +179,12 @@ module InPortFIFO (
     input  [`VC_BITS : 0]         send_ports_getCredits,
     output                        EN_send_ports_getCredits
   );
+
+  /* device_type can be "MASTER" or "SLAVE"
+   * MASTER: InPortFIFO sends requests and uses VC 1
+   * SLAVE:  InPortFIFO sends responses and uses VC 0
+   */
+  parameter device_type = "MASTER";
 
   logic deq_valid, deq_ready, deq_fire;
   assign deq_fire = deq_valid && deq_ready;
@@ -132,8 +210,16 @@ module InPortFIFO (
   assign EN_send_ports_putFlit      = deq_valid;
   assign EN_send_ports_getCredits   = 1;
 
-  // TODO: consider multiple VCs
-  assign get_credits_valid          = send_ports_getCredits[`VC_BITS];
+  always_comb begin
+    get_credits_valid = 0;
+    if (device_type == "MASTER") begin
+      get_credits_valid = send_ports_getCredits[`VC_BITS] &&
+                          (send_ports_getCredits[`VC_BITS - 1 : 0] == 1'b1);
+    end else begin
+      get_credits_valid = send_ports_getCredits[`VC_BITS] &&
+                          (send_ports_getCredits[`VC_BITS - 1 : 0] == 1'b0);
+    end
+  end
 
   always_ff @(posedge CLK) begin
     if (!RST_N) begin
@@ -164,6 +250,12 @@ module OutPortFIFO (
     input                         get_flit_ready
   );
 
+  /* device_type can be "MASTER" or "SLAVE"
+   * MASTER: OutPortFIFO receives responses and uses VC 0
+   * SLAVE:  OutPortFIFO receives requests and uses VC 1
+   */
+  parameter device_type = "MASTER";
+
   logic enq_valid, enq_ready;
 
   BasicFIFO out_port_fifo (
@@ -180,8 +272,16 @@ module OutPortFIFO (
   assign enq_valid              = recv_ports_getFlit[`FLIT_WIDTH - 1];
   assign EN_recv_ports_getFlit  = enq_ready;
 
-  // TODO: consider multiple VCs
-  assign recv_ports_putCredits_cr_in  = {EN_recv_ports_putCredits, 1'b0};
+  logic vc;
+  always_comb begin
+    vc = 0;
+    if (device_type == "MASTER") begin
+      vc = 0;
+    end else begin
+      vc = 1;
+    end
+  end
+  assign recv_ports_putCredits_cr_in  = {EN_recv_ports_putCredits, vc};
   assign EN_recv_ports_putCredits     = get_flit_valid && get_flit_ready;
 
 endmodule

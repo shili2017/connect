@@ -9,7 +9,7 @@ import axi4_pkg::*;
 module CONNECT_testbench_sample_axi4;
   parameter HalfClkPeriod = 5;
   localparam ClkPeriod = 2 * HalfClkPeriod;
-  localparam test_cycles = 30;
+  localparam test_cycles = 50;
 
   reg CLK;
   reg RST_N;
@@ -52,7 +52,7 @@ module CONNECT_testbench_sample_axi4;
     #(ClkPeriod);
     start_read_m1 = 0;
 
-    #(ClkPeriod * 30);
+    #(ClkPeriod * 40);
 
     test_write();
     test_read();

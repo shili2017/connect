@@ -98,21 +98,61 @@ module NetworkIdealAXI4Wrapper (
   always_ff @(posedge CLK) begin
     cycle <= cycle + 1;
     if (EN_send_ports_0_putFlit)
-      $display("%d: Port 0 send flit %x", cycle, send_ports_0_putFlit_flit_in);
+      $display("%d: Port 0 send flit %x (tail=%x dst=%x vc=%x)", cycle,
+        send_ports_0_putFlit_flit_in,
+        send_ports_0_putFlit_flit_in[`FLIT_WIDTH - 2],
+        send_ports_0_putFlit_flit_in[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
+        send_ports_0_putFlit_flit_in[`FLIT_WIDTH - 5]
+      );
     if (EN_send_ports_1_putFlit)
-      $display("%d: Port 1 send flit %x", cycle, send_ports_1_putFlit_flit_in);
+      $display("%d: Port 1 send flit %x (tail=%x dst=%x vc=%x)", cycle,
+        send_ports_1_putFlit_flit_in,
+        send_ports_1_putFlit_flit_in[`FLIT_WIDTH - 2],
+        send_ports_1_putFlit_flit_in[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
+        send_ports_1_putFlit_flit_in[`FLIT_WIDTH - 5]
+      );
     if (EN_send_ports_2_putFlit)
-      $display("%d: Port 2 send flit %x", cycle, send_ports_2_putFlit_flit_in);
+      $display("%d: Port 2 send flit %x (tail=%x dst=%x vc=%x)", cycle,
+        send_ports_2_putFlit_flit_in,
+        send_ports_2_putFlit_flit_in[`FLIT_WIDTH - 2],
+        send_ports_2_putFlit_flit_in[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
+        send_ports_2_putFlit_flit_in[`FLIT_WIDTH - 5]
+      );
     if (EN_send_ports_3_putFlit)
-      $display("%d: Port 3 send flit %x", cycle, send_ports_3_putFlit_flit_in);
+      $display("%d: Port 3 send flit %x (tail=%x dst=%x vc=%x)", cycle,
+        send_ports_3_putFlit_flit_in,
+        send_ports_3_putFlit_flit_in[`FLIT_WIDTH - 2],
+        send_ports_3_putFlit_flit_in[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
+        send_ports_3_putFlit_flit_in[`FLIT_WIDTH - 5]
+      );
     if (recv_ports_0_getFlit[`FLIT_WIDTH - 1])
-      $display("%d: Port 0 recv flit %x", cycle, recv_ports_0_getFlit);
+      $display("%d: Port 0 recv flit %x (tail=%x dst=%x vc=%x)", cycle,
+        recv_ports_0_getFlit,
+        recv_ports_0_getFlit[`FLIT_WIDTH - 2],
+        recv_ports_0_getFlit[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
+        recv_ports_0_getFlit[`FLIT_WIDTH - 5],
+      );
     if (recv_ports_1_getFlit[`FLIT_WIDTH - 1])
-      $display("%d: Port 1 recv flit %x", cycle, recv_ports_1_getFlit);
+      $display("%d: Port 1 recv flit %x (tail=%x dst=%x vc=%x)", cycle,
+        recv_ports_1_getFlit,
+        recv_ports_1_getFlit[`FLIT_WIDTH - 2],
+        recv_ports_1_getFlit[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
+        recv_ports_1_getFlit[`FLIT_WIDTH - 5],
+      );
     if (recv_ports_2_getFlit[`FLIT_WIDTH - 1])
-      $display("%d: Port 2 recv flit %x", cycle, recv_ports_2_getFlit);
+      $display("%d: Port 2 recv flit %x (tail=%x dst=%x vc=%x)", cycle,
+        recv_ports_2_getFlit,
+        recv_ports_2_getFlit[`FLIT_WIDTH - 2],
+        recv_ports_2_getFlit[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
+        recv_ports_2_getFlit[`FLIT_WIDTH - 5],
+      );
     if (recv_ports_3_getFlit[`FLIT_WIDTH - 1])
-      $display("%d: Port 3 recv flit %x", cycle, recv_ports_3_getFlit);
+      $display("%d: Port 3 recv flit %x (tail=%x dst=%x vc=%x)", cycle,
+        recv_ports_3_getFlit,
+        recv_ports_3_getFlit[`FLIT_WIDTH - 2],
+        recv_ports_3_getFlit[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
+        recv_ports_3_getFlit[`FLIT_WIDTH - 5],
+      );
     
     if (send_ports_0_getCredits[`VC_BITS])
       $display("%d: Port 0 get a credit", cycle);
@@ -162,6 +202,8 @@ module NetworkIdealAXI4Wrapper (
     .EN_send_ports_getCredits   (EN_send_ports_0_getCredits   )
   );
 
+  defparam b0_in_fifo.device_type = "MASTER";
+
   OutPortFIFO b0_out_fifo (
     .CLK,
     .RST_N,
@@ -173,6 +215,8 @@ module NetworkIdealAXI4Wrapper (
     .get_flit_valid             (get_flit_0_valid             ),
     .get_flit_ready             (get_flit_0_ready             )
   );
+
+  defparam b0_out_fifo.device_type = "MASTER";
 
   AXI4MasterBridge b0 (
     .CLK,
@@ -198,6 +242,8 @@ module NetworkIdealAXI4Wrapper (
     .EN_send_ports_getCredits   (EN_send_ports_1_getCredits   )
   );
 
+  defparam b1_in_fifo.device_type = "MASTER";
+
   OutPortFIFO b1_out_fifo (
     .CLK,
     .RST_N,
@@ -209,6 +255,8 @@ module NetworkIdealAXI4Wrapper (
     .get_flit_valid             (get_flit_1_valid             ),
     .get_flit_ready             (get_flit_1_ready             )
   );
+
+  defparam b1_out_fifo.device_type = "MASTER";
 
   AXI4MasterBridge b1 (
     .CLK,
@@ -234,6 +282,8 @@ module NetworkIdealAXI4Wrapper (
     .EN_send_ports_getCredits   (EN_send_ports_2_getCredits   )
   );
 
+  defparam b2_in_fifo.device_type = "SLAVE";
+
   OutPortFIFO b2_out_fifo (
     .CLK,
     .RST_N,
@@ -245,6 +295,8 @@ module NetworkIdealAXI4Wrapper (
     .get_flit_valid             (get_flit_2_valid             ),
     .get_flit_ready             (get_flit_2_ready             )
   );
+
+  defparam b2_out_fifo.device_type = "SLAVE";
 
   AXI4SlaveBridge b2 (
     .CLK,
@@ -270,6 +322,8 @@ module NetworkIdealAXI4Wrapper (
     .EN_send_ports_getCredits   (EN_send_ports_3_getCredits   )
   );
 
+  defparam b3_in_fifo.device_type = "SLAVE";
+
   OutPortFIFO b3_out_fifo (
     .CLK,
     .RST_N,
@@ -281,6 +335,8 @@ module NetworkIdealAXI4Wrapper (
     .get_flit_valid             (get_flit_3_valid             ),
     .get_flit_ready             (get_flit_3_ready             )
   );
+
+  defparam b3_out_fifo.device_type = "SLAVE";
 
   AXI4SlaveBridge b3 (
     .CLK,

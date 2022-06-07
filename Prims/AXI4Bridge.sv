@@ -148,6 +148,9 @@ module AXI4MasterBridge (
       put_flit_dst = put_flit_dst_reg;
   end
 
+  // Flit tail
+  logic put_flit_tail;
+
   // aw channel output signal
   assign axi.awready  = (state == IDLE);
 
@@ -171,12 +174,13 @@ module AXI4MasterBridge (
   assign axi.rdata    = get_flit_reg_data[63 : 0];
   assign axi.rvalid   = (state == RDATA2);
 
-  // InPortSimple output signal
-  assign put_flit               = {put_flit_valid, 1'b1, put_flit_dst, 1'b0, put_flit_data};
-  assign put_flit_valid         = aw_fire || ar_fire || w_fire;
+  // InPortSimple output signal, use VC 1
+  assign put_flit       = {put_flit_valid, put_flit_tail, put_flit_dst, 1'b1, put_flit_data};
+  assign put_flit_tail  = ar_fire || (w_fire && axi.wlast);
+  assign put_flit_valid = aw_fire || ar_fire || w_fire;
 
   // OutPortSimple output signal
-  assign get_flit_ready         = (state == WRESP1) || (state == RDATA1);
+  assign get_flit_ready = (state == WRESP1) || (state == RDATA1);
 
   // Debug
   axi_id_t     axi_awid;
@@ -347,6 +351,9 @@ module AXI4SlaveBridge (
       put_flit_dst = put_flit_dst_reg;
   end
 
+  // Flit tail
+  logic put_flit_tail;
+
   // FSM to handle AXI slave device status
   always_comb begin
     case (state)
@@ -466,12 +473,13 @@ module AXI4SlaveBridge (
   // r channel output signal
   assign axi.rready   = (state == RDATA);
 
-  // InPortSimple output signal
-  assign put_flit               = {put_flit_valid, 1'b1, put_flit_dst, 1'b0, put_flit_data};
-  assign put_flit_valid         = b_fire || r_fire;
+  // InPortSimple output signal, use VC 0
+  assign put_flit       = {put_flit_valid, put_flit_tail, put_flit_dst, 1'b0, put_flit_data};
+  assign put_flit_tail  = b_fire || (r_fire && axi.rlast);
+  assign put_flit_valid = b_fire || r_fire;
 
   // OutPortSimple output signal
-  assign get_flit_ready         = (state == IDLE) || (state == WDATA1);
+  assign get_flit_ready = (state == IDLE) || (state == WDATA1);
 
   // Debug
   axi_id_t     axi_awid;
