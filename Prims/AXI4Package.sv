@@ -5,6 +5,8 @@ parameter DATA_WIDTH   = 64;
 parameter STRB_WIDTH   = DATA_WIDTH / 8;
 parameter ID_WIDTH     = 8;
 parameter USER_WIDTH   = 8;
+parameter KEEP_WIDTH   = DATA_WIDTH / 8;  // AXI4-Stream
+parameter DEST_WIDTH   = 4;               // AXI4-Stream
 
 parameter AXSIZE_1     = 3'b000;
 parameter AXSIZE_2     = 3'b001;
@@ -37,6 +39,9 @@ typedef logic [2 : 0]              axi_prot_t;
 typedef logic [3 : 0]              axi_qos_t;
 typedef logic [3 : 0]              axi_region_t;
 typedef logic [USER_WIDTH - 1 : 0] axi_user_t;
+
+typedef logic [KEEP_WIDTH - 1 : 0] axi_keep_t;  // AXI4-Stream
+typedef logic [DEST_WIDTH - 1 : 0] axi_dest_t;  // AXI4-Stream
 
 parameter CHANNEL_AW  = 3'b001;
 parameter CHANNEL_W   = 3'b011;

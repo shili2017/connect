@@ -207,7 +207,7 @@ module InPortFIFO (
 
   assign deq_ready                  = (credit_counter != 0);
   assign send_ports_putFlit_flit_in = {EN_send_ports_putFlit, deq_data[`FLIT_WIDTH - 2 : 0]};
-  assign EN_send_ports_putFlit      = deq_valid;
+  assign EN_send_ports_putFlit      = deq_valid && deq_ready;
   assign EN_send_ports_getCredits   = 1;
 
   always_comb begin

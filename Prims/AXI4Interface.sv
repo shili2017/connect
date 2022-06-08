@@ -162,3 +162,41 @@ interface axi_interface;
   );
 
 endinterface
+
+interface axi_stream_interface;
+
+  axi_data_t tdata;
+  axi_strb_t tstrb;
+  axi_keep_t tkeep;
+  logic      tlast;
+  axi_id_t   tid;
+  axi_dest_t tdest;
+  axi_user_t tuser;
+  logic      tvalid;
+  logic      tready;
+
+  modport master (
+    output tdata,
+    output tstrb,
+    output tkeep,
+    output tlast,
+    output tid,
+    output tdest,
+    output tuser,
+    output tvalid,
+    input  tready
+  );
+
+  modport slave (
+    input  tdata,
+    input  tstrb,
+    input  tkeep,
+    input  tlast,
+    input  tid,
+    input  tdest,
+    input  tuser,
+    input  tvalid,
+    output tready
+  );
+
+endinterface
