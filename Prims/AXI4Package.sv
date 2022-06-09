@@ -49,4 +49,7 @@ parameter CHANNEL_B   = 3'b101;
 parameter CHANNEL_AR  = 3'b010;
 parameter CHANNEL_R   = 3'b110;
 
+parameter AXI4_FLIT_DATA_WIDTH  = 92;
+parameter AXI4S_FLIT_DATA_WIDTH = 101;
+
 endpackage

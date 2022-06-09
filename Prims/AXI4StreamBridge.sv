@@ -2,6 +2,8 @@
 
 import axi4_pkg::*;
 
+`define AXI4S_FLIT_WIDTH (AXI4S_FLIT_DATA_WIDTH + 2 + `DEST_BITS + `VC_BITS)
+
 module AXI4StreamMasterBridge (
     input CLK,
     input RST_N,
@@ -10,9 +12,9 @@ module AXI4StreamMasterBridge (
     axi_stream_interface.slave axis,
 
     // InPortSimple send port
-    output [`FLIT_WIDTH - 1 : 0]  put_flit,
-    output                        put_flit_valid,
-    input                         put_flit_ready
+    output [`AXI4S_FLIT_WIDTH - 1 : 0]  put_flit,
+    output                              put_flit_valid,
+    input                               put_flit_ready
   );
 
   // State definitions
@@ -41,14 +43,16 @@ module AXI4StreamMasterBridge (
   end
 
   // put_flit
-  logic [`FLIT_DATA_WIDTH - 1 : 0] put_flit_data;
-  logic [1 : 0] put_flit_dst;
+  logic [AXI4S_FLIT_DATA_WIDTH - 1 : 0] put_flit_data;
+  logic [`DEST_BITS - 1 : 0] put_flit_dst;
+  logic [`VC_BITS - 1 : 0] put_flit_vc;
   logic put_flit_tail;
 
-  // InPortSimple output signal, use VC 0
-  assign put_flit       = {put_flit_valid, put_flit_tail, put_flit_dst, 1'b1, put_flit_data};
+  // InPortSimple output signal, use VC 1
+  assign put_flit       = {put_flit_valid, put_flit_tail, put_flit_dst, put_flit_vc, put_flit_data};
   assign put_flit_data  = {axis.tuser, axis.tdest, axis.tid, axis.tlast, axis.tkeep, axis.tstrb, axis.tdata};
-  assign put_flit_dst   = axis.tdest[1 : 0];
+  assign put_flit_vc    = 1;
+  assign put_flit_dst   = axis.tdest[`DEST_BITS - 1 : 0];
   assign put_flit_tail  = t_fire && axis.tlast;
   assign put_flit_valid = t_fire;
 
@@ -82,9 +86,9 @@ module AXI4StreamSlaveBridge (
     axi_stream_interface.master axis,
 
     // OutPortSimple recv port
-    input  [`FLIT_WIDTH - 1 : 0]  get_flit,
-    input                         get_flit_valid,
-    output                        get_flit_ready
+    input  [`AXI4S_FLIT_WIDTH - 1 : 0]  get_flit,
+    input                               get_flit_valid,
+    output                              get_flit_ready
   );
 
   // State definitions
@@ -102,12 +106,12 @@ module AXI4StreamSlaveBridge (
   wire t_fire = axis.tvalid && axis.tready;
 
   // Flit register
-  reg  [`FLIT_WIDTH - 1 : 0] get_flit_reg;
-  wire                            get_flit_reg_valid   = get_flit_reg[`FLIT_WIDTH - 1];
-  wire                            get_flit_reg_is_tail = get_flit_reg[`FLIT_WIDTH - 2];
-  wire [1 : 0]                    get_flit_reg_dst     = get_flit_reg[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4];
-  wire                            get_flit_reg_vc      = get_flit_reg[`FLIT_WIDTH - 5];
-  wire [`FLIT_DATA_WIDTH - 1 : 0] get_flit_reg_data    = get_flit_reg[`FLIT_DATA_WIDTH - 1 : 0];
+  reg  [`AXI4S_FLIT_WIDTH - 1 : 0] get_flit_reg;
+  wire                                 get_flit_reg_valid   = get_flit_reg[`AXI4S_FLIT_WIDTH - 1];
+  wire                                 get_flit_reg_is_tail = get_flit_reg[`AXI4S_FLIT_WIDTH - 2];
+  wire [`DEST_BITS - 1 : 0]            get_flit_reg_dst     = get_flit_reg[`AXI4S_FLIT_WIDTH - 3 : `AXI4S_FLIT_WIDTH - `DEST_BITS - 2];
+  wire [`VC_BITS - 1 : 0]              get_flit_reg_vc      = get_flit_reg[`AXI4S_FLIT_WIDTH - `DEST_BITS - 3: `AXI4S_FLIT_WIDTH - `DEST_BITS - `VC_BITS - 2];
+  wire [AXI4S_FLIT_DATA_WIDTH - 1 : 0] get_flit_reg_data    = get_flit_reg[AXI4S_FLIT_DATA_WIDTH - 1 : 0];
 
   always @(posedge CLK) begin
     if (!RST_N) begin

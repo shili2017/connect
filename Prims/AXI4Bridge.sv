@@ -2,6 +2,8 @@
 
 import axi4_pkg::*;
 
+`define AXI4_FLIT_WIDTH (AXI4_FLIT_DATA_WIDTH + 2 + `DEST_BITS + `VC_BITS)
+
 module AXI4MasterBridge (
     input CLK,
     input RST_N,
@@ -10,14 +12,14 @@ module AXI4MasterBridge (
     axi_interface.slave axi,
 
     // InPortSimple send port
-    output [`FLIT_WIDTH - 1 : 0]  put_flit,
-    output                        put_flit_valid,
-    input                         put_flit_ready,
+    output [`AXI4_FLIT_WIDTH - 1 : 0] put_flit,
+    output                            put_flit_valid,
+    input                             put_flit_ready,
 
     // OutPortSimple recv port
-    input  [`FLIT_WIDTH - 1 : 0]  get_flit,
-    input                         get_flit_valid,
-    output                        get_flit_ready
+    input  [`AXI4_FLIT_WIDTH - 1 : 0] get_flit,
+    input                             get_flit_valid,
+    output                            get_flit_ready
   );
 
   // State definitions
@@ -87,15 +89,15 @@ module AXI4MasterBridge (
   end
 
   // put_flit data for aw/w/ar
-  logic [`FLIT_DATA_WIDTH - 1 : 0] put_flit_data;
-  logic [`FLIT_DATA_WIDTH - 1 : 0] put_flit_data_aw;
+  logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data;
+  logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data_aw;
   assign put_flit_data_aw =
     {CHANNEL_AW, axi.awuser, axi.awid, 12'b0, axi.awlen, axi.awsize, axi.awburst,
      axi.awlock, axi.awcache, axi.awprot, axi.awqos, axi.awregion, axi.awaddr};
-  logic [`FLIT_DATA_WIDTH - 1 : 0] put_flit_data_w;
+  logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data_w;
   assign put_flit_data_w =
     {CHANNEL_W, axi.wuser, axi.wid, axi.wlast, axi.wstrb, axi.wdata};
-  logic [`FLIT_DATA_WIDTH - 1 : 0] put_flit_data_ar;
+  logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data_ar;
   assign put_flit_data_ar =
     {CHANNEL_AR, axi.aruser, axi.arid, 12'b0, axi.arlen, axi.arsize, axi.arburst,
      axi.arlock, axi.arcache, axi.arprot, axi.arqos, axi.arregion, axi.araddr};
@@ -110,12 +112,12 @@ module AXI4MasterBridge (
   end
 
   // Flit register
-  reg  [`FLIT_WIDTH - 1 : 0] get_flit_reg;
-  wire                            get_flit_reg_valid   = get_flit_reg[`FLIT_WIDTH - 1];
-  wire                            get_flit_reg_is_tail = get_flit_reg[`FLIT_WIDTH - 2];
-  wire [1 : 0]                    get_flit_reg_dst     = get_flit_reg[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4];
-  wire                            get_flit_reg_vc      = get_flit_reg[`FLIT_WIDTH - 5];
-  wire [`FLIT_DATA_WIDTH - 1 : 0] get_flit_reg_data    = get_flit_reg[`FLIT_DATA_WIDTH - 1 : 0];
+  reg  [`AXI4_FLIT_WIDTH - 1 : 0] get_flit_reg;
+  wire                                get_flit_reg_valid   = get_flit_reg[`AXI4_FLIT_WIDTH - 1];
+  wire                                get_flit_reg_is_tail = get_flit_reg[`AXI4_FLIT_WIDTH - 2];
+  wire [`DEST_BITS - 1 : 0]           get_flit_reg_dst     = get_flit_reg[`AXI4_FLIT_WIDTH - 3 : `AXI4_FLIT_WIDTH - `DEST_BITS - 2];
+  wire [`VC_BITS - 1 : 0]             get_flit_reg_vc      = get_flit_reg[`AXI4_FLIT_WIDTH - `DEST_BITS - 3: `AXI4_FLIT_WIDTH - `DEST_BITS - `VC_BITS - 2];
+  wire [AXI4_FLIT_DATA_WIDTH - 1 : 0] get_flit_reg_data    = get_flit_reg[AXI4_FLIT_DATA_WIDTH - 1 : 0];
 
   always @(posedge CLK) begin
     if (!RST_N) begin
@@ -126,30 +128,33 @@ module AXI4MasterBridge (
   end
 
   // Flit destination
-  logic [1:0] put_flit_dst;
-  logic [1:0] put_flit_dst_reg;
+  logic [`DEST_BITS - 1 : 0] put_flit_dst;
+  logic [`DEST_BITS - 1 : 0] put_flit_dst_reg;
 
   always_ff @(posedge CLK) begin
     if (!RST_N) begin
       put_flit_dst_reg <= 0;
     end else if (aw_fire) begin
-      put_flit_dst_reg <= axi.awaddr[1:0];
+      put_flit_dst_reg <= axi.awaddr[`DEST_BITS - 1 : 0];
     end else if (ar_fire) begin
-      put_flit_dst_reg <= axi.araddr[1:0];
+      put_flit_dst_reg <= axi.araddr[`DEST_BITS - 1 : 0];
     end
   end
 
   always_comb begin
     if (aw_fire)
-      put_flit_dst = axi.awaddr[1:0];
+      put_flit_dst = axi.awaddr[`DEST_BITS - 1 : 0];
     else if (ar_fire)
-      put_flit_dst = axi.araddr[1:0];
+      put_flit_dst = axi.araddr[`DEST_BITS - 1 : 0];
     else
       put_flit_dst = put_flit_dst_reg;
   end
 
   // Flit tail
   logic put_flit_tail;
+
+  // Flit vc
+  logic [`VC_BITS - 1 : 0] put_flit_vc;
 
   // aw channel output signal
   assign axi.awready  = (state == IDLE);
@@ -175,7 +180,8 @@ module AXI4MasterBridge (
   assign axi.rvalid   = (state == RDATA2);
 
   // InPortSimple output signal, use VC 1
-  assign put_flit       = {put_flit_valid, put_flit_tail, put_flit_dst, 1'b1, put_flit_data};
+  assign put_flit       = {put_flit_valid, put_flit_tail, put_flit_dst, put_flit_vc, put_flit_data};
+  assign put_flit_vc    = 1;
   assign put_flit_tail  = ar_fire || (w_fire && axi.wlast);
   assign put_flit_valid = aw_fire || ar_fire || w_fire;
 
@@ -284,14 +290,14 @@ module AXI4SlaveBridge (
     axi_interface.master axi,
 
     // InPortSimple send port
-    output [`FLIT_WIDTH - 1 : 0]  put_flit,
-    output                        put_flit_valid,
-    input                         put_flit_ready,
+    output [`AXI4_FLIT_WIDTH - 1 : 0] put_flit,
+    output                            put_flit_valid,
+    input                             put_flit_ready,
 
     // OutPortSimple recv port
-    input  [`FLIT_WIDTH - 1 : 0]  get_flit,
-    input                         get_flit_valid,
-    output                        get_flit_ready
+    input  [`AXI4_FLIT_WIDTH - 1 : 0] get_flit,
+    input                             get_flit_valid,
+    output                            get_flit_ready
   );
 
   // State definitions
@@ -313,13 +319,13 @@ module AXI4SlaveBridge (
   wire r_fire  = axi.rvalid  && axi.rready;
 
   // Flit register
-  reg  [`FLIT_WIDTH - 1 : 0] get_flit_reg;
-  wire                            get_flit_reg_valid   = get_flit_reg[`FLIT_WIDTH - 1];
-  wire                            get_flit_reg_is_tail = get_flit_reg[`FLIT_WIDTH - 2];
-  wire [1 : 0]                    get_flit_reg_dst     = get_flit_reg[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4];
-  wire                            get_flit_reg_vc      = get_flit_reg[`FLIT_WIDTH - 5];
-  wire [`FLIT_DATA_WIDTH - 1 : 0] get_flit_reg_data    = get_flit_reg[`FLIT_DATA_WIDTH - 1 : 0];
-  
+  reg  [`AXI4_FLIT_WIDTH - 1 : 0] get_flit_reg;
+  wire                                get_flit_reg_valid   = get_flit_reg[`AXI4_FLIT_WIDTH - 1];
+  wire                                get_flit_reg_is_tail = get_flit_reg[`AXI4_FLIT_WIDTH - 2];
+  wire [`DEST_BITS - 1 : 0]           get_flit_reg_dst     = get_flit_reg[`AXI4_FLIT_WIDTH - 3 : `AXI4_FLIT_WIDTH - `DEST_BITS - 2];
+  wire [`VC_BITS - 1 : 0]             get_flit_reg_vc      = get_flit_reg[`AXI4_FLIT_WIDTH - `DEST_BITS - 3: `AXI4_FLIT_WIDTH - `DEST_BITS - `VC_BITS - 2];
+  wire [AXI4_FLIT_DATA_WIDTH - 1 : 0] get_flit_reg_data    = get_flit_reg[AXI4_FLIT_DATA_WIDTH - 1 : 0];
+
   always @(posedge CLK) begin
     if (!RST_N) begin
       get_flit_reg <= 0;
@@ -329,24 +335,24 @@ module AXI4SlaveBridge (
   end
 
   // Flit destination
-  logic [1:0] put_flit_dst;
-  logic [1:0] put_flit_dst_reg;
+  logic [`DEST_BITS - 1 : 0] put_flit_dst;
+  logic [`DEST_BITS - 1 : 0] put_flit_dst_reg;
 
   always_ff @(posedge CLK) begin
     if (!RST_N) begin
       put_flit_dst_reg <= 0;
     end else if (aw_fire) begin
-      put_flit_dst_reg <= axi.awid[1:0];
+      put_flit_dst_reg <= axi.awid[`DEST_BITS - 1 : 0];
     end else if (ar_fire) begin
-      put_flit_dst_reg <= axi.arid[1:0];
+      put_flit_dst_reg <= axi.arid[`DEST_BITS - 1 : 0];
     end
   end
 
   always_comb begin
     if (aw_fire)
-      put_flit_dst = axi.awid[1:0];
+      put_flit_dst = axi.awid[`DEST_BITS - 1 : 0];
     else if (ar_fire)
-      put_flit_dst = axi.arid[1:0];
+      put_flit_dst = axi.arid[`DEST_BITS - 1 : 0];
     else
       put_flit_dst = put_flit_dst_reg;
   end
@@ -354,14 +360,17 @@ module AXI4SlaveBridge (
   // Flit tail
   logic put_flit_tail;
 
+  // Flit VC
+  logic [`VC_BITS - 1 : 0] put_flit_vc;
+
   // FSM to handle AXI slave device status
   always_comb begin
     case (state)
       IDLE: begin
         if (get_flit_valid) begin
-          if (get_flit[`FLIT_DATA_WIDTH - 1 : `FLIT_DATA_WIDTH - 3] == CHANNEL_AW)
+          if (get_flit[AXI4_FLIT_DATA_WIDTH - 1 : AXI4_FLIT_DATA_WIDTH - 3] == CHANNEL_AW)
             next_state = WADDR;
-          else if (get_flit[`FLIT_DATA_WIDTH - 1 : `FLIT_DATA_WIDTH - 3] == CHANNEL_AR)
+          else if (get_flit[AXI4_FLIT_DATA_WIDTH - 1 : AXI4_FLIT_DATA_WIDTH - 3] == CHANNEL_AR)
             next_state = RADDR;
           else
             next_state = state;
@@ -415,11 +424,11 @@ module AXI4SlaveBridge (
   end
 
   // put_flit data for b/r
-  logic [`FLIT_DATA_WIDTH - 1 : 0] put_flit_data;
-  logic [`FLIT_DATA_WIDTH - 1 : 0] put_flit_data_b;
+  logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data;
+  logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data_b;
   assign put_flit_data_b =
     {CHANNEL_B, axi.buser, axi.bid, 7'b0, axi.bresp, 64'b0};
-  logic [`FLIT_DATA_WIDTH - 1 : 0] put_flit_data_r;
+  logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data_r;
   assign put_flit_data_r =
     {CHANNEL_R, axi.ruser, axi.rid, axi.rlast, 6'b0, axi.rresp, axi.rdata};
 
@@ -474,7 +483,8 @@ module AXI4SlaveBridge (
   assign axi.rready   = (state == RDATA);
 
   // InPortSimple output signal, use VC 0
-  assign put_flit       = {put_flit_valid, put_flit_tail, put_flit_dst, 1'b0, put_flit_data};
+  assign put_flit       = {put_flit_valid, put_flit_tail, put_flit_dst, put_flit_vc, put_flit_data};
+  assign put_flit_vc    = 0;
   assign put_flit_tail  = b_fire || (r_fire && axi.rlast);
   assign put_flit_valid = b_fire || r_fire;
 

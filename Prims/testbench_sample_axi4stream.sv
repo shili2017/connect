@@ -65,7 +65,7 @@ module CONNECT_testbench_sample_axi4stream;
     #(ClkPeriod);
     start_m3 = 0;
 
-    #(ClkPeriod * 100);
+    #(ClkPeriod * 1000);
 
     test_2();
     test_3();
@@ -86,14 +86,6 @@ module CONNECT_testbench_sample_axi4stream;
 
   always_ff @(posedge CLK) begin
     cycle <= cycle + 1;
-    if (m0.tvalid && m0.tready)
-      $display("%d: [m0- t] addr=%x dest=%x", cycle, m0.tdata, m0.tdest);
-    if (m1.tvalid && m1.tready)
-      $display("%d: [m1- t] addr=%x dest=%x", cycle, m1.tdata, m1.tdest);
-    if (s0.tvalid && s0.tready)
-      $display("%d: [s0- t] addr=%x dest=%x", cycle, s0.tdata, s0.tdest);
-    if (s1.tvalid && s1.tready)
-      $display("%d: [s1- t] addr=%x dest=%x", cycle, s1.tdata, s1.tdest);
   end
 
   task test_0;

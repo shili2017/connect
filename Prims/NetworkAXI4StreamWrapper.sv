@@ -74,6 +74,33 @@ module NetworkIdealAXI4StreamWrapper (
 
   reg [15 : 0] cycle = 0;
 
+  localparam AXI4S_FLIT_WIDTH = AXI4S_FLIT_DATA_WIDTH + 2 + `DEST_BITS + `VC_BITS;
+
+  wire [AXI4S_FLIT_WIDTH - 1 : 0] put_flit_0_axi4s;
+  wire                            put_flit_0_axi4s_valid;
+  wire                            put_flit_0_axi4s_ready;
+  wire [AXI4S_FLIT_WIDTH - 1 : 0] get_flit_0_axi4s;
+  wire                            get_flit_0_axi4s_valid;
+  wire                            get_flit_0_axi4s_ready;
+  wire [AXI4S_FLIT_WIDTH - 1 : 0] put_flit_1_axi4s;
+  wire                            put_flit_1_axi4s_valid;
+  wire                            put_flit_1_axi4s_ready;
+  wire [AXI4S_FLIT_WIDTH - 1 : 0] get_flit_1_axi4s;
+  wire                            get_flit_1_axi4s_valid;
+  wire                            get_flit_1_axi4s_ready;
+  wire [AXI4S_FLIT_WIDTH - 1 : 0] put_flit_2_axi4s;
+  wire                            put_flit_2_axi4s_valid;
+  wire                            put_flit_2_axi4s_ready;
+  wire [AXI4S_FLIT_WIDTH - 1 : 0] get_flit_2_axi4s;
+  wire                            get_flit_2_axi4s_valid;
+  wire                            get_flit_2_axi4s_ready;
+  wire [AXI4S_FLIT_WIDTH - 1 : 0] put_flit_3_axi4s;
+  wire                            put_flit_3_axi4s_valid;
+  wire                            put_flit_3_axi4s_ready;
+  wire [AXI4S_FLIT_WIDTH - 1 : 0] get_flit_3_axi4s;
+  wire                            get_flit_3_axi4s_valid;
+  wire                            get_flit_3_axi4s_ready;
+
   wire [`FLIT_WIDTH - 1 : 0]  put_flit_0;
   wire                        put_flit_0_valid;
   wire                        put_flit_0_ready;
@@ -101,6 +128,8 @@ module NetworkIdealAXI4StreamWrapper (
 
   always_ff @(posedge CLK) begin
     cycle <= cycle + 1;
+
+`ifdef DEBUG_PORT_FLIT
     if (EN_send_ports_0_putFlit)
       $display("%d: Port 0 send flit %x (tail=%x dst=%x vc=%x)", cycle,
         send_ports_0_putFlit_flit_in,
@@ -157,7 +186,9 @@ module NetworkIdealAXI4StreamWrapper (
         recv_ports_3_getFlit[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
         recv_ports_3_getFlit[`FLIT_WIDTH - 5],
       );
-    
+`endif
+
+`ifdef DEBUG_PORT_CREDIT
     if (send_ports_0_getCredits[`VC_BITS])
       $display("%d: Port 0 get a credit (vc=%x)", cycle,
         send_ports_0_getCredits[`VC_BITS - 1 : 0]
@@ -190,24 +221,28 @@ module NetworkIdealAXI4StreamWrapper (
       $display("%d: Port 3 put a credit (vc=%x)", cycle,
         recv_ports_3_putCredits_cr_in[`VC_BITS - 1 : 0]
       );
+`endif
 
-    if (put_flit_0_valid && put_flit_0_ready)
-      $display("%d: Device 0 send flit %x", cycle, put_flit_0);
-    if (put_flit_1_valid && put_flit_1_ready)
-      $display("%d: Device 1 send flit %x", cycle, put_flit_1);
-    if (put_flit_2_valid && put_flit_2_ready)
-      $display("%d: Device 2 send flit %x", cycle, put_flit_2);
-    if (put_flit_3_valid && put_flit_3_ready)
-      $display("%d: Device 3 send flit %x", cycle, put_flit_3);
+`ifdef DEBUG_DEVICE_FLIT
+    if (put_flit_0_axi4s_valid && put_flit_0_axi4s_ready)
+      $display("%d: Device 0 send flit %x", cycle, put_flit_0_axi4s);
+    if (put_flit_1_axi4s_valid && put_flit_1_axi4s_ready)
+      $display("%d: Device 1 send flit %x", cycle, put_flit_1_axi4s);
+    if (put_flit_2_axi4s_valid && put_flit_2_axi4s_ready)
+      $display("%d: Device 2 send flit %x", cycle, put_flit_2_axi4s);
+    if (put_flit_3_axi4s_valid && put_flit_3_axi4s_ready)
+      $display("%d: Device 3 send flit %x", cycle, put_flit_3_axi4s);
 
-    if (get_flit_0_valid && get_flit_0_ready)
-      $display("%d: Device 0 recv flit %x", cycle, get_flit_0);
-    if (get_flit_1_valid && get_flit_1_ready)
-      $display("%d: Device 1 recv flit %x", cycle, get_flit_1);
-    if (get_flit_2_valid && get_flit_2_ready)
-      $display("%d: Device 2 recv flit %x", cycle, get_flit_2);
-    if (get_flit_3_valid && get_flit_3_ready)
-      $display("%d: Device 3 recv flit %x", cycle, get_flit_3);
+    if (get_flit_0_axi4s_valid && get_flit_0_axi4s_ready)
+      $display("%d: Device 0 recv flit %x", cycle, get_flit_0_axi4s);
+    if (get_flit_1_axi4s_valid && get_flit_1_axi4s_ready)
+      $display("%d: Device 1 recv flit %x", cycle, get_flit_1_axi4s);
+    if (get_flit_2_axi4s_valid && get_flit_2_axi4s_ready)
+      $display("%d: Device 2 recv flit %x", cycle, get_flit_2_axi4s);
+    if (get_flit_3_axi4s_valid && get_flit_3_axi4s_ready)
+      $display("%d: Device 3 recv flit %x", cycle, get_flit_3_axi4s);
+`endif
+
   end
 
   InPortFIFO b0m_in_fifo (
@@ -241,19 +276,41 @@ module NetworkIdealAXI4StreamWrapper (
   AXI4StreamMasterBridge b0m (
     .CLK,
     .RST_N,
-    .axis           (m0               ),
-    .put_flit       (put_flit_0       ),
-    .put_flit_valid (put_flit_0_valid ),
-    .put_flit_ready (put_flit_0_ready )
+    .axis           (m0                     ),
+    .put_flit       (put_flit_0_axi4s       ),
+    .put_flit_valid (put_flit_0_axi4s_valid ),
+    .put_flit_ready (put_flit_0_axi4s_ready )
+  );
+
+  FlitSerializer b0m_serializer (
+    .CLK,
+    .RST_N,
+    .in_flit        (put_flit_0_axi4s       ),
+    .in_flit_valid  (put_flit_0_axi4s_valid ),
+    .in_flit_ready  (put_flit_0_axi4s_ready ),
+    .out_flit       (put_flit_0             ),
+    .out_flit_valid (put_flit_0_valid       ),
+    .out_flit_ready (put_flit_0_ready       )
   );
 
   AXI4StreamSlaveBridge b0s (
     .CLK,
     .RST_N,
-    .axis           (s0               ),
-    .get_flit       (get_flit_0       ),
-    .get_flit_valid (get_flit_0_valid ),
-    .get_flit_ready (get_flit_0_ready )
+    .axis           (s0                     ),
+    .get_flit       (get_flit_0_axi4s       ),
+    .get_flit_valid (get_flit_0_axi4s_valid ),
+    .get_flit_ready (get_flit_0_axi4s_ready )
+  );
+
+  FlitDeserializer b0s_deserializer (
+    .CLK,
+    .RST_N,
+    .in_flit        (get_flit_0             ),
+    .in_flit_valid  (get_flit_0_valid       ),
+    .in_flit_ready  (get_flit_0_ready       ),
+    .out_flit       (get_flit_0_axi4s       ),
+    .out_flit_valid (get_flit_0_axi4s_valid ),
+    .out_flit_ready (get_flit_0_axi4s_ready )
   );
 
   InPortFIFO b1m_in_fifo (
@@ -284,22 +341,45 @@ module NetworkIdealAXI4StreamWrapper (
 
   defparam b1s_out_fifo.device_type = "SLAVE";
 
+  
   AXI4StreamMasterBridge b1m (
     .CLK,
     .RST_N,
-    .axis           (m1               ),
-    .put_flit       (put_flit_1       ),
-    .put_flit_valid (put_flit_1_valid ),
-    .put_flit_ready (put_flit_1_ready )
+    .axis           (m1                     ),
+    .put_flit       (put_flit_1_axi4s       ),
+    .put_flit_valid (put_flit_1_axi4s_valid ),
+    .put_flit_ready (put_flit_1_axi4s_ready )
+  );
+
+  FlitSerializer b1m_serializer (
+    .CLK,
+    .RST_N,
+    .in_flit        (put_flit_1_axi4s       ),
+    .in_flit_valid  (put_flit_1_axi4s_valid ),
+    .in_flit_ready  (put_flit_1_axi4s_ready ),
+    .out_flit       (put_flit_1             ),
+    .out_flit_valid (put_flit_1_valid       ),
+    .out_flit_ready (put_flit_1_ready       )
   );
 
   AXI4StreamSlaveBridge b1s (
     .CLK,
     .RST_N,
-    .axis           (s1               ),
-    .get_flit       (get_flit_1       ),
-    .get_flit_valid (get_flit_1_valid ),
-    .get_flit_ready (get_flit_1_ready )
+    .axis           (s1                     ),
+    .get_flit       (get_flit_1_axi4s       ),
+    .get_flit_valid (get_flit_1_axi4s_valid ),
+    .get_flit_ready (get_flit_1_axi4s_ready )
+  );
+
+  FlitDeserializer b1s_deserializer (
+    .CLK,
+    .RST_N,
+    .in_flit        (get_flit_1             ),
+    .in_flit_valid  (get_flit_1_valid       ),
+    .in_flit_ready  (get_flit_1_ready       ),
+    .out_flit       (get_flit_1_axi4s       ),
+    .out_flit_valid (get_flit_1_axi4s_valid ),
+    .out_flit_ready (get_flit_1_axi4s_ready )
   );
 
   InPortFIFO b2m_in_fifo (
@@ -330,22 +410,45 @@ module NetworkIdealAXI4StreamWrapper (
 
   defparam b2s_out_fifo.device_type = "SLAVE";
 
+  
   AXI4StreamMasterBridge b2m (
     .CLK,
     .RST_N,
-    .axis           (m2               ),
-    .put_flit       (put_flit_2       ),
-    .put_flit_valid (put_flit_2_valid ),
-    .put_flit_ready (put_flit_2_ready )
+    .axis           (m2                     ),
+    .put_flit       (put_flit_2_axi4s       ),
+    .put_flit_valid (put_flit_2_axi4s_valid ),
+    .put_flit_ready (put_flit_2_axi4s_ready )
+  );
+
+  FlitSerializer b2m_serializer (
+    .CLK,
+    .RST_N,
+    .in_flit        (put_flit_2_axi4s       ),
+    .in_flit_valid  (put_flit_2_axi4s_valid ),
+    .in_flit_ready  (put_flit_2_axi4s_ready ),
+    .out_flit       (put_flit_2             ),
+    .out_flit_valid (put_flit_2_valid       ),
+    .out_flit_ready (put_flit_2_ready       )
   );
 
   AXI4StreamSlaveBridge b2s (
     .CLK,
     .RST_N,
-    .axis           (s2               ),
-    .get_flit       (get_flit_2       ),
-    .get_flit_valid (get_flit_2_valid ),
-    .get_flit_ready (get_flit_2_ready )
+    .axis           (s2                     ),
+    .get_flit       (get_flit_2_axi4s       ),
+    .get_flit_valid (get_flit_2_axi4s_valid ),
+    .get_flit_ready (get_flit_2_axi4s_ready )
+  );
+
+  FlitDeserializer b2s_deserializer (
+    .CLK,
+    .RST_N,
+    .in_flit        (get_flit_2             ),
+    .in_flit_valid  (get_flit_2_valid       ),
+    .in_flit_ready  (get_flit_2_ready       ),
+    .out_flit       (get_flit_2_axi4s       ),
+    .out_flit_valid (get_flit_2_axi4s_valid ),
+    .out_flit_ready (get_flit_2_axi4s_ready )
   );
 
   InPortFIFO b3m_in_fifo (
@@ -379,19 +482,41 @@ module NetworkIdealAXI4StreamWrapper (
   AXI4StreamMasterBridge b3m (
     .CLK,
     .RST_N,
-    .axis           (m3               ),
-    .put_flit       (put_flit_3       ),
-    .put_flit_valid (put_flit_3_valid ),
-    .put_flit_ready (put_flit_3_ready )
+    .axis           (m3                     ),
+    .put_flit       (put_flit_3_axi4s       ),
+    .put_flit_valid (put_flit_3_axi4s_valid ),
+    .put_flit_ready (put_flit_3_axi4s_ready )
+  );
+
+  FlitSerializer b3m_serializer (
+    .CLK,
+    .RST_N,
+    .in_flit        (put_flit_3_axi4s       ),
+    .in_flit_valid  (put_flit_3_axi4s_valid ),
+    .in_flit_ready  (put_flit_3_axi4s_ready ),
+    .out_flit       (put_flit_3             ),
+    .out_flit_valid (put_flit_3_valid       ),
+    .out_flit_ready (put_flit_3_ready       )
   );
 
   AXI4StreamSlaveBridge b3s (
     .CLK,
     .RST_N,
-    .axis           (s3               ),
-    .get_flit       (get_flit_3       ),
-    .get_flit_valid (get_flit_3_valid ),
-    .get_flit_ready (get_flit_3_ready )
+    .axis           (s3                     ),
+    .get_flit       (get_flit_3_axi4s       ),
+    .get_flit_valid (get_flit_3_axi4s_valid ),
+    .get_flit_ready (get_flit_3_axi4s_ready )
+  );
+
+  FlitDeserializer b3s_deserializer (
+    .CLK,
+    .RST_N,
+    .in_flit        (get_flit_3             ),
+    .in_flit_valid  (get_flit_3_valid       ),
+    .in_flit_ready  (get_flit_3_ready       ),
+    .out_flit       (get_flit_3_axi4s       ),
+    .out_flit_valid (get_flit_3_axi4s_valid ),
+    .out_flit_ready (get_flit_3_axi4s_ready )
   );
 
   mkNetwork network (

@@ -51,20 +51,34 @@ module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = 
   defparam in_port_fifo.intended_device_family  = "Stratix";
   defparam in_port_fifo.underflow_checking      = "ON";
   defparam in_port_fifo.overflow_checking       = "ON";
-  defparam in_port_fifo.allow_rwcycle_when_full = "ON";
+  // defparam in_port_fifo.allow_rwcycle_when_full = "ON";
 
   assign enq_ready = !full;
   assign deq_valid = !empty;
 
+  logic enq_fire, deq_fire;
+  assign enq_fire = enq_valid && enq_ready;
+  assign deq_fire = deq_valid && deq_ready;
+
   reg [15 : 0] cycle = 0;
+  reg [15 : 0] count = 0;
 
   always_ff @(posedge CLK) begin
     cycle <= cycle + 1;
-    if (enq_valid && enq_ready)
+    if (enq_fire && !deq_fire)
+      count <= count + 1;
+    if (deq_fire && !enq_fire)
+      count <= count - 1;
+  end
+
+`ifdef DEBUG_FLIT_FIFO
+  always_ff @(posedge CLK) begin
+    if (enq_fire)
       $display("%d: [ENQ] data=%x", cycle, enq_data);
-    if (deq_valid && deq_ready)
+    if (deq_fire)
       $display("%d: [DEQ] data=%x", cycle, deq_data);
   end
+`endif
 
 endmodule
 
