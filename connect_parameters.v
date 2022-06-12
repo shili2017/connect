@@ -2,10 +2,12 @@
 `define NUM_USER_RECV_PORTS 4
 `define NUM_VCS 2
 `define VC_BITS ((`NUM_VCS > 1) ? $clog2(`NUM_VCS) : 1)
-`define DEST_BITS 2
-`define FLIT_DATA_WIDTH 35
+`define SRC_BITS $clog2(`NUM_USER_SEND_PORTS)
+`define DEST_BITS $clog2(`NUM_USER_RECV_PORTS)
+`define FLIT_DATA_WIDTH 38
 `define FLIT_WIDTH (`FLIT_DATA_WIDTH + 2 + `VC_BITS + `DEST_BITS)
 `define FLIT_BUFFER_DEPTH 4
 
 // `define DEBUG_DEVICE_FLIT
 // `define DEBUG_PORT_FLIT
+// `define DEBUG_SERIALIZER

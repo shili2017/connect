@@ -81,7 +81,7 @@ module AXI4StreamMasterDevice #(parameter ID = 0) (
 
 endmodule
 
-module AXI4StreamSlaveDevice (
+module AXI4StreamSlaveDevice #(parameter ONLY_ACCEPT = 0) (
   input CLK,
   input RST_N,
   axi_stream_interface.slave axis
@@ -104,7 +104,7 @@ module AXI4StreamSlaveDevice (
         buffer[i] = 0;
       end
     end else begin
-      if (axis.tvalid && axis.tready) begin
+      if (axis.tvalid && axis.tready && axis.tid == ONLY_ACCEPT) begin
         len_cnt <= len_cnt + 1;
         buffer[len_cnt] <= axis.tdata;
       end

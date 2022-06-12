@@ -134,57 +134,57 @@ module NetworkIdealAXI4StreamWrapper (
       $display("%d: Port 0 send flit %x (tail=%x dst=%x vc=%x)", cycle,
         send_ports_0_putFlit_flit_in,
         send_ports_0_putFlit_flit_in[`FLIT_WIDTH - 2],
-        send_ports_0_putFlit_flit_in[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
-        send_ports_0_putFlit_flit_in[`FLIT_WIDTH - 5]
+        send_ports_0_putFlit_flit_in[`FLIT_WIDTH - 3 -: `DEST_BITS],
+        send_ports_0_putFlit_flit_in[`FLIT_WIDTH - 3 - `DEST_BITS -: `VC_BITS]
       );
     if (EN_send_ports_1_putFlit)
       $display("%d: Port 1 send flit %x (tail=%x dst=%x vc=%x)", cycle,
         send_ports_1_putFlit_flit_in,
         send_ports_1_putFlit_flit_in[`FLIT_WIDTH - 2],
-        send_ports_1_putFlit_flit_in[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
-        send_ports_1_putFlit_flit_in[`FLIT_WIDTH - 5]
+        send_ports_1_putFlit_flit_in[`FLIT_WIDTH - 3 -: `DEST_BITS],
+        send_ports_1_putFlit_flit_in[`FLIT_WIDTH - 3 - `DEST_BITS -: `VC_BITS]
       );
     if (EN_send_ports_2_putFlit)
       $display("%d: Port 2 send flit %x (tail=%x dst=%x vc=%x)", cycle,
         send_ports_2_putFlit_flit_in,
         send_ports_2_putFlit_flit_in[`FLIT_WIDTH - 2],
-        send_ports_2_putFlit_flit_in[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
-        send_ports_2_putFlit_flit_in[`FLIT_WIDTH - 5]
+        send_ports_2_putFlit_flit_in[`FLIT_WIDTH - 3 -: `DEST_BITS],
+        send_ports_2_putFlit_flit_in[`FLIT_WIDTH - 3 - `DEST_BITS -: `VC_BITS]
       );
     if (EN_send_ports_3_putFlit)
       $display("%d: Port 3 send flit %x (tail=%x dst=%x vc=%x)", cycle,
         send_ports_3_putFlit_flit_in,
         send_ports_3_putFlit_flit_in[`FLIT_WIDTH - 2],
-        send_ports_3_putFlit_flit_in[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
-        send_ports_3_putFlit_flit_in[`FLIT_WIDTH - 5]
+        send_ports_3_putFlit_flit_in[`FLIT_WIDTH - 3 -: `DEST_BITS],
+        send_ports_3_putFlit_flit_in[`FLIT_WIDTH - 3 - `DEST_BITS -: `VC_BITS]
       );
     if (recv_ports_0_getFlit[`FLIT_WIDTH - 1])
       $display("%d: Port 0 recv flit %x (tail=%x dst=%x vc=%x)", cycle,
         recv_ports_0_getFlit,
         recv_ports_0_getFlit[`FLIT_WIDTH - 2],
-        recv_ports_0_getFlit[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
-        recv_ports_0_getFlit[`FLIT_WIDTH - 5],
+        recv_ports_0_getFlit[`FLIT_WIDTH - 3 -: `DEST_BITS],
+        recv_ports_0_getFlit[`FLIT_WIDTH - 3 - `DEST_BITS -: `VC_BITS]
       );
     if (recv_ports_1_getFlit[`FLIT_WIDTH - 1])
       $display("%d: Port 1 recv flit %x (tail=%x dst=%x vc=%x)", cycle,
         recv_ports_1_getFlit,
         recv_ports_1_getFlit[`FLIT_WIDTH - 2],
-        recv_ports_1_getFlit[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
-        recv_ports_1_getFlit[`FLIT_WIDTH - 5],
+        recv_ports_1_getFlit[`FLIT_WIDTH - 3 -: `DEST_BITS],
+        recv_ports_1_getFlit[`FLIT_WIDTH - 3 - `DEST_BITS -: `VC_BITS]
       );
     if (recv_ports_2_getFlit[`FLIT_WIDTH - 1])
       $display("%d: Port 2 recv flit %x (tail=%x dst=%x vc=%x)", cycle,
         recv_ports_2_getFlit,
         recv_ports_2_getFlit[`FLIT_WIDTH - 2],
-        recv_ports_2_getFlit[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
-        recv_ports_2_getFlit[`FLIT_WIDTH - 5],
+        recv_ports_2_getFlit[`FLIT_WIDTH - 3 -: `DEST_BITS],
+        recv_ports_2_getFlit[`FLIT_WIDTH - 3 - `DEST_BITS -: `VC_BITS]
       );
     if (recv_ports_3_getFlit[`FLIT_WIDTH - 1])
       $display("%d: Port 3 recv flit %x (tail=%x dst=%x vc=%x)", cycle,
         recv_ports_3_getFlit,
         recv_ports_3_getFlit[`FLIT_WIDTH - 2],
-        recv_ports_3_getFlit[`FLIT_WIDTH - 3 : `FLIT_WIDTH - 4],
-        recv_ports_3_getFlit[`FLIT_WIDTH - 5],
+        recv_ports_3_getFlit[`FLIT_WIDTH - 3 -: `DEST_BITS],
+        recv_ports_3_getFlit[`FLIT_WIDTH - 3 - `DEST_BITS -: `VC_BITS]
       );
 `endif
 
@@ -293,6 +293,9 @@ module NetworkIdealAXI4StreamWrapper (
     .out_flit_ready (put_flit_0_ready       )
   );
 
+  defparam b0m_serializer.DEBUG_ID = 0;
+  defparam b0m_serializer.IN_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
+
   AXI4StreamSlaveBridge b0s (
     .CLK,
     .RST_N,
@@ -312,6 +315,9 @@ module NetworkIdealAXI4StreamWrapper (
     .out_flit_valid (get_flit_0_axi4s_valid ),
     .out_flit_ready (get_flit_0_axi4s_ready )
   );
+
+  defparam b0s_deserializer.DEBUG_ID = 0;
+  defparam b0s_deserializer.OUT_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   InPortFIFO b1m_in_fifo (
     .CLK,
@@ -341,7 +347,6 @@ module NetworkIdealAXI4StreamWrapper (
 
   defparam b1s_out_fifo.device_type = "SLAVE";
 
-  
   AXI4StreamMasterBridge b1m (
     .CLK,
     .RST_N,
@@ -362,6 +367,9 @@ module NetworkIdealAXI4StreamWrapper (
     .out_flit_ready (put_flit_1_ready       )
   );
 
+  defparam b1m_serializer.DEBUG_ID = 1;
+  defparam b1m_serializer.IN_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
+
   AXI4StreamSlaveBridge b1s (
     .CLK,
     .RST_N,
@@ -381,6 +389,9 @@ module NetworkIdealAXI4StreamWrapper (
     .out_flit_valid (get_flit_1_axi4s_valid ),
     .out_flit_ready (get_flit_1_axi4s_ready )
   );
+
+  defparam b1s_deserializer.DEBUG_ID = 1;
+  defparam b1s_deserializer.OUT_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   InPortFIFO b2m_in_fifo (
     .CLK,
@@ -431,6 +442,9 @@ module NetworkIdealAXI4StreamWrapper (
     .out_flit_ready (put_flit_2_ready       )
   );
 
+  defparam b2m_serializer.DEBUG_ID = 2;
+  defparam b2m_serializer.IN_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
+
   AXI4StreamSlaveBridge b2s (
     .CLK,
     .RST_N,
@@ -450,6 +464,9 @@ module NetworkIdealAXI4StreamWrapper (
     .out_flit_valid (get_flit_2_axi4s_valid ),
     .out_flit_ready (get_flit_2_axi4s_ready )
   );
+
+  defparam b2s_deserializer.DEBUG_ID = 2;
+  defparam b2s_deserializer.OUT_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   InPortFIFO b3m_in_fifo (
     .CLK,
@@ -499,6 +516,9 @@ module NetworkIdealAXI4StreamWrapper (
     .out_flit_ready (put_flit_3_ready       )
   );
 
+  defparam b3m_serializer.DEBUG_ID = 3;
+  defparam b3m_serializer.IN_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
+
   AXI4StreamSlaveBridge b3s (
     .CLK,
     .RST_N,
@@ -518,6 +538,9 @@ module NetworkIdealAXI4StreamWrapper (
     .out_flit_valid (get_flit_3_axi4s_valid ),
     .out_flit_ready (get_flit_3_axi4s_ready )
   );
+
+  defparam b3s_deserializer.DEBUG_ID = 3;
+  defparam b3s_deserializer.OUT_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   mkNetwork network (
     .CLK,

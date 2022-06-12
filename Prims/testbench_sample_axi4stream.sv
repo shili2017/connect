@@ -24,6 +24,7 @@ module CONNECT_testbench_sample_axi4stream;
 
   reg [15 : 0] cycle = 0;
   integer i;
+  parameter LEN = 24;
 
   // Generate Clock
   initial CLK = 0;
@@ -68,16 +69,16 @@ module CONNECT_testbench_sample_axi4stream;
     #(ClkPeriod * 1000);
 
     test_2();
-    test_3();
+    // test_3();
     test_0();
-    test_1();
+    // test_1();
     $finish;
   end
 
   axi_dest_t dest_m0 = 2;
-  axi_dest_t dest_m1 = 3;
+  axi_dest_t dest_m1 = 2;
   axi_dest_t dest_m2 = 0;
-  axi_dest_t dest_m3 = 1;
+  axi_dest_t dest_m3 = 0;
   axi_data_t data = 64'hdeadbeef00000000;
   int flag_0 = 1;
   int flag_1 = 1;
@@ -89,7 +90,7 @@ module CONNECT_testbench_sample_axi4stream;
   end
 
   task test_0;
-    for (int i = 0; i < 24; i++) begin
+    for (int i = 0; i < LEN; i++) begin
       if (d0s.buffer[i] != data + i) flag_0 = 0;
       $display("actual:%h expected:%h", d0s.buffer[i], data + i);
     end
@@ -99,7 +100,7 @@ module CONNECT_testbench_sample_axi4stream;
   endtask
 
   task test_1;
-    for (int i = 0; i < 24; i++) begin
+    for (int i = 0; i < LEN; i++) begin
       if (d1s.buffer[i] != data + i) flag_1 = 0;
       $display("actual:%h expected:%h", d1s.buffer[i], data + i);
     end
@@ -109,7 +110,7 @@ module CONNECT_testbench_sample_axi4stream;
   endtask
 
   task test_2;
-    for (int i = 0; i < 24; i++) begin
+    for (int i = 0; i < LEN; i++) begin
       if (d2s.buffer[i] != data + i) flag_2 = 0;
       $display("actual:%h expected:%h", d2s.buffer[i], data + i);
     end
@@ -119,7 +120,7 @@ module CONNECT_testbench_sample_axi4stream;
   endtask
 
   task test_3;
-    for (int i = 0; i < 24; i++) begin
+    for (int i = 0; i < LEN; i++) begin
       if (d3s.buffer[i] != data + i) flag_3 = 0;
       $display("actual:%h expected:%h", d3s.buffer[i], data + i);
     end
@@ -169,7 +170,7 @@ module CONNECT_testbench_sample_axi4stream;
     .dest  (dest_m2)
   );
 
-  defparam d2m.ID = 1;
+  defparam d2m.ID = 2;
 
   AXI4StreamMasterDevice d3m (
     .CLK,
@@ -179,13 +180,15 @@ module CONNECT_testbench_sample_axi4stream;
     .dest  (dest_m3)
   );
 
-  defparam d3m.ID = 1;
+  defparam d3m.ID = 3;
 
   AXI4StreamSlaveDevice d0s (
     .CLK,
     .RST_N,
     .axis (s0)
   );
+
+  defparam d0s.ONLY_ACCEPT = 2;
 
   AXI4StreamSlaveDevice d1s (
     .CLK,
@@ -198,6 +201,8 @@ module CONNECT_testbench_sample_axi4stream;
     .RST_N,
     .axis (s2)
   );
+
+  defparam d2s.ONLY_ACCEPT = 0;
 
   AXI4StreamSlaveDevice d3s (
     .CLK,

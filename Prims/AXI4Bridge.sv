@@ -92,15 +92,15 @@ module AXI4MasterBridge (
   logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data;
   logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data_aw;
   assign put_flit_data_aw =
-    {CHANNEL_AW, axi.awuser, axi.awid, 12'b0, axi.awlen, axi.awsize, axi.awburst,
-     axi.awlock, axi.awcache, axi.awprot, axi.awqos, axi.awregion, axi.awaddr};
+    {CHANNEL_AW, 12'b0, axi.awlen, axi.awsize, axi.awburst, axi.awlock, axi.awcache,
+    axi.awprot, axi.awqos, axi.awregion, axi.awaddr, axi.awuser, axi.awid};
   logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data_w;
   assign put_flit_data_w =
-    {CHANNEL_W, axi.wuser, axi.wid, axi.wlast, axi.wstrb, axi.wdata};
+    {CHANNEL_W, axi.wlast, axi.wstrb, axi.wdata, axi.wuser, axi.wid};
   logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data_ar;
   assign put_flit_data_ar =
-    {CHANNEL_AR, axi.aruser, axi.arid, 12'b0, axi.arlen, axi.arsize, axi.arburst,
-     axi.arlock, axi.arcache, axi.arprot, axi.arqos, axi.arregion, axi.araddr};
+    {CHANNEL_AR, 12'b0, axi.arlen, axi.arsize, axi.arburst, axi.arlock, axi.arcache,
+     axi.arprot, axi.arqos, axi.arregion, axi.araddr, axi.aruser, axi.arid};
 
   always_comb begin
     case ({aw_fire, w_fire, ar_fire})
@@ -157,26 +157,26 @@ module AXI4MasterBridge (
   logic [`VC_BITS - 1 : 0] put_flit_vc;
 
   // aw channel output signal
-  assign axi.awready  = (state == IDLE);
+  assign axi.awready  = (state == IDLE) && put_flit_ready;
 
   // w channel output signal
-  assign axi.wready   = (state == WDATA);
+  assign axi.wready   = (state == WDATA) && put_flit_ready;
 
   // b channel output signal
-  assign axi.buser    = get_flit_reg_data[88 : 81];
-  assign axi.bid      = get_flit_reg_data[80 : 73];
-  assign axi.bresp    = get_flit_reg_data[65 : 64];
+  assign axi.bresp    = get_flit_reg_data[81 : 80];
+  assign axi.buser    = get_flit_reg_data[15 : 8];
+  assign axi.bid      = get_flit_reg_data[7 : 0];
   assign axi.bvalid   = (state == WRESP2);
 
   // ar channel output signal
-  assign axi.arready  = (state == IDLE);
+  assign axi.arready  = (state == IDLE) && put_flit_ready;
 
   // r channel output signal
-  assign axi.ruser    = get_flit_reg_data[88 : 81];
-  assign axi.rid      = get_flit_reg_data[80 : 73];
-  assign axi.rlast    = get_flit_reg_data[72];
-  assign axi.rresp    = get_flit_reg_data[65 : 64];
-  assign axi.rdata    = get_flit_reg_data[63 : 0];
+  assign axi.rlast    = get_flit_reg_data[88];
+  assign axi.rresp    = get_flit_reg_data[81 : 80];
+  assign axi.rdata    = get_flit_reg_data[79 : 16];
+  assign axi.ruser    = get_flit_reg_data[15 : 8];
+  assign axi.rid      = get_flit_reg_data[7 : 0];
   assign axi.rvalid   = (state == RDATA2);
 
   // InPortSimple output signal, use VC 1
@@ -427,10 +427,10 @@ module AXI4SlaveBridge (
   logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data;
   logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data_b;
   assign put_flit_data_b =
-    {CHANNEL_B, axi.buser, axi.bid, 7'b0, axi.bresp, 64'b0};
+    {CHANNEL_B, 7'b0, axi.bresp, 64'b0, axi.buser, axi.bid};
   logic [AXI4_FLIT_DATA_WIDTH - 1 : 0] put_flit_data_r;
   assign put_flit_data_r =
-    {CHANNEL_R, axi.ruser, axi.rid, axi.rlast, 6'b0, axi.rresp, axi.rdata};
+    {CHANNEL_R, axi.rlast, 6'b0, axi.rresp, axi.rdata, axi.ruser, axi.rid};
 
   always_comb begin
     case ({b_fire, r_fire})
@@ -441,46 +441,46 @@ module AXI4SlaveBridge (
   end
 
   // aw channel output signal
-  assign axi.awid     = get_flit_reg_data[80 : 73];
-  assign axi.awaddr   = get_flit_reg_data[31 : 0];
-  assign axi.awlen    = get_flit_reg_data[60 : 53];
-  assign axi.awsize   = get_flit_reg_data[52 : 50];
-  assign axi.awburst  = get_flit_reg_data[49 : 48];
-  assign axi.awlock   = get_flit_reg_data[47];
-  assign axi.awcache  = get_flit_reg_data[46 : 43];
-  assign axi.awprot   = get_flit_reg_data[42 : 40];
-  assign axi.awqos    = get_flit_reg_data[39 : 36];
-  assign axi.awregion = get_flit_reg_data[35 : 32];
-  assign axi.awuser   = get_flit_reg_data[88 : 81];
+  assign axi.awlen    = get_flit_reg_data[76 : 69];
+  assign axi.awsize   = get_flit_reg_data[68 : 66];
+  assign axi.awburst  = get_flit_reg_data[65 : 64];
+  assign axi.awlock   = get_flit_reg_data[63];
+  assign axi.awcache  = get_flit_reg_data[62 : 59];
+  assign axi.awprot   = get_flit_reg_data[58 : 56];
+  assign axi.awqos    = get_flit_reg_data[55 : 52];
+  assign axi.awregion = get_flit_reg_data[51 : 48];
+  assign axi.awaddr   = get_flit_reg_data[47 : 16];
+  assign axi.awuser   = get_flit_reg_data[15 : 8];
+  assign axi.awid     = get_flit_reg_data[7 : 0];
   assign axi.awvalid  = (state == WADDR);
 
   // w channel output signal
-  assign axi.wid      = get_flit_reg_data[80 : 73];
-  assign axi.wdata    = get_flit_reg_data[63 : 0];
-  assign axi.wstrb    = get_flit_reg_data[71 : 64];
-  assign axi.wlast    = get_flit_reg_data[72];
-  assign axi.wuser    = get_flit_reg_data[88 : 81];
+  assign axi.wlast    = get_flit_reg_data[88];
+  assign axi.wstrb    = get_flit_reg_data[87 : 80];
+  assign axi.wdata    = get_flit_reg_data[79 : 16];
+  assign axi.wuser    = get_flit_reg_data[15 : 8];
+  assign axi.wid      = get_flit_reg_data[7 : 0];
   assign axi.wvalid   = (state == WDATA2);
 
   // b channel output signal
-  assign axi.bready   = (state == WRESP);
+  assign axi.bready   = (state == WRESP) && put_flit_ready;
 
   // ar channel output signal
-  assign axi.arid     = get_flit_reg_data[80 : 73];
-  assign axi.araddr   = get_flit_reg_data[31 : 0];
-  assign axi.arlen    = get_flit_reg_data[60 : 53];
-  assign axi.arsize   = get_flit_reg_data[52 : 50];
-  assign axi.arburst  = get_flit_reg_data[49 : 48];
-  assign axi.arlock   = get_flit_reg_data[47];
-  assign axi.arcache  = get_flit_reg_data[46 : 43];
-  assign axi.arprot   = get_flit_reg_data[42 : 40];
-  assign axi.arqos    = get_flit_reg_data[39 : 36];
-  assign axi.arregion = get_flit_reg_data[35 : 32];
-  assign axi.aruser   = get_flit_reg_data[88 : 81];
+  assign axi.arlen    = get_flit_reg_data[76 : 69];
+  assign axi.arsize   = get_flit_reg_data[68 : 66];
+  assign axi.arburst  = get_flit_reg_data[65 : 64];
+  assign axi.arlock   = get_flit_reg_data[63];
+  assign axi.arcache  = get_flit_reg_data[62 : 59];
+  assign axi.arprot   = get_flit_reg_data[58 : 56];
+  assign axi.arqos    = get_flit_reg_data[55 : 52];
+  assign axi.arregion = get_flit_reg_data[51 : 48];
+  assign axi.araddr   = get_flit_reg_data[47 : 16];
+  assign axi.aruser   = get_flit_reg_data[15 : 8];
+  assign axi.arid     = get_flit_reg_data[7 : 0];
   assign axi.arvalid  = (state == RADDR);
 
   // r channel output signal
-  assign axi.rready   = (state == RDATA);
+  assign axi.rready   = (state == RDATA) && put_flit_ready;
 
   // InPortSimple output signal, use VC 0
   assign put_flit       = {put_flit_valid, put_flit_tail, put_flit_dst, put_flit_vc, put_flit_data};

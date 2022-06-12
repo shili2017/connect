@@ -54,7 +54,7 @@ module AXI4MasterDevice #(parameter ID = 0) (
   assign axi.awvalid = (state == WADDR);
 
   // W
-  assign axi.wid = 0;
+  assign axi.wid = ID;
   assign axi.wdata = (state == WDATA) ? data + len_cnt : 32'h0;
   assign axi.wstrb = 8'hff;
   assign axi.wlast = (state == WDATA && len_cnt == LEN - 1);
@@ -205,7 +205,7 @@ module AXI4MasterDevice #(parameter ID = 0) (
 
 endmodule
 
-module AXI4SlaveDevice (
+module AXI4SlaveDevice #(parameter ID = 0) (
   input CLK,
   input RST_N,
   axi_interface.slave axi
@@ -235,7 +235,7 @@ module AXI4SlaveDevice (
   assign axi.arready = (state == RADDR);
 
   // R
-  assign axi.rid = 0;
+  assign axi.rid = ID;
   assign axi.rdata = (state == RDATA) ? buffer[addr + len_cnt] : 0;
   assign axi.rresp = 0;
   assign axi.rlast = (state == RDATA && len_cnt == len && axi.rvalid  && axi.rready);
@@ -249,7 +249,7 @@ module AXI4SlaveDevice (
   assign axi.wready = (state == WDATA);
 
   // B
-  assign axi.bid = 0;
+  assign axi.bid = ID;
   assign axi.bresp = 0;
   assign axi.buser = 0;
   assign axi.bvalid = (state == WRESP);

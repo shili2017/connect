@@ -50,10 +50,10 @@ module AXI4StreamMasterBridge (
 
   // InPortSimple output signal, use VC 1
   assign put_flit       = {put_flit_valid, put_flit_tail, put_flit_dst, put_flit_vc, put_flit_data};
-  assign put_flit_data  = {axis.tuser, axis.tdest, axis.tid, axis.tlast, axis.tkeep, axis.tstrb, axis.tdata};
+  assign put_flit_data  = {axis.tlast, axis.tkeep, axis.tstrb, axis.tdata, axis.tdest, axis.tuser, axis.tid};
   assign put_flit_vc    = 1;
   assign put_flit_dst   = axis.tdest[`DEST_BITS - 1 : 0];
-  assign put_flit_tail  = t_fire && axis.tlast;
+  assign put_flit_tail  = t_fire; // AXI4-Stream supports interleaving
   assign put_flit_valid = t_fire;
 
   // Debug
@@ -130,13 +130,13 @@ module AXI4StreamSlaveBridge (
     endcase
   end
 
-  assign axis.tuser  = get_flit_reg_data[100 : 93];
-  assign axis.tdest  = get_flit_reg_data[92 : 89];
-  assign axis.tid    = get_flit_reg_data[88 : 81];
-  assign axis.tlast  = get_flit_reg_data[80];
-  assign axis.tkeep  = get_flit_reg_data[79 : 72];
-  assign axis.tstrb  = get_flit_reg_data[71 : 64];
-  assign axis.tdata  = get_flit_reg_data[63 : 0];
+  assign axis.tlast  = get_flit_reg_data[100];
+  assign axis.tkeep  = get_flit_reg_data[99 : 92];
+  assign axis.tstrb  = get_flit_reg_data[91 : 84];
+  assign axis.tdata  = get_flit_reg_data[83 : 20];
+  assign axis.tdest  = get_flit_reg_data[19 : 16];
+  assign axis.tuser  = get_flit_reg_data[15 : 8];
+  assign axis.tid    = get_flit_reg_data[7 : 0];
   assign axis.tvalid = (state == TDATA);
 
   // OutPortSimple output signal
