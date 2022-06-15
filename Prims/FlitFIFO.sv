@@ -1,6 +1,6 @@
 `include "connect_parameters.v"
 
-`define USE_FIFO_IP
+//`define USE_FIFO_IP
 
 `ifdef USE_FIFO_IP
 
@@ -197,8 +197,9 @@ module InPortFIFO (
   /* device_type can be "MASTER" or "SLAVE"
    * MASTER: InPortFIFO sends requests and uses VC 1
    * SLAVE:  InPortFIFO sends responses and uses VC 0
+   * SYMMETRIC: InPortFIFO uses VC 0
    */
-  parameter device_type = "MASTER";
+  parameter device_type = "SYMMETRIC";
 
   logic deq_valid, deq_ready, deq_fire;
   assign deq_fire = deq_valid && deq_ready;
@@ -267,8 +268,9 @@ module OutPortFIFO (
   /* device_type can be "MASTER" or "SLAVE"
    * MASTER: OutPortFIFO receives responses and uses VC 0
    * SLAVE:  OutPortFIFO receives requests and uses VC 1
+   * SYMMETRIC: OutPortFIFO uses VC 0
    */
-  parameter device_type = "MASTER";
+  parameter device_type = "SYMMETRIC";
 
   logic enq_valid, enq_ready;
 
@@ -289,7 +291,7 @@ module OutPortFIFO (
   logic vc;
   always_comb begin
     vc = 0;
-    if (device_type == "MASTER") begin
+    if (device_type == "MASTER" || device_type == "SYMMETRIC") begin
       vc = 0;
     end else begin
       vc = 1;
