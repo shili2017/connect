@@ -1,6 +1,6 @@
 `include "connect_parameters.v"
 
-`define USE_FIFO_IP
+//`define USE_FIFO_IP
 
 `ifdef USE_FIFO_IP
 
