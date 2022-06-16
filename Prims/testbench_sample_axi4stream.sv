@@ -7,10 +7,11 @@
 import axi4_pkg::*;
 
 module CONNECT_testbench_sample_axi4stream;
-  parameter HalfClkPeriod = 5;
+  parameter HalfClkPeriod = 20;
   localparam ClkPeriod = 2 * HalfClkPeriod;
+  localparam ClkDividerFactor = 5;
 
-  reg CLK;
+  reg CLK_NOC, CLK_FPGA;
   reg RST_N;
 
   axi_stream_interface m0();
@@ -27,8 +28,12 @@ module CONNECT_testbench_sample_axi4stream;
   parameter LEN = 24;
 
   // Generate Clock
-  initial CLK = 0;
-  always #(HalfClkPeriod) CLK = ~CLK;
+  initial begin
+    CLK_NOC = 0;
+    CLK_FPGA = 0;
+  end
+  always #(HalfClkPeriod / ClkDividerFactor) CLK_NOC = ~CLK_NOC;
+  always #(HalfClkPeriod) CLK_FPGA = ~CLK_FPGA;
 
   reg start_m0;
   reg start_m1;
@@ -76,16 +81,16 @@ module CONNECT_testbench_sample_axi4stream;
   end
 
   axi_dest_t dest_m0 = 2;
-  axi_dest_t dest_m1 = 2;
+  axi_dest_t dest_m1 = 3;
   axi_dest_t dest_m2 = 0;
-  axi_dest_t dest_m3 = 0;
+  axi_dest_t dest_m3 = 1;
   axi_data_t data = 64'hdeadbeef00000000;
   int flag_0 = 1;
   int flag_1 = 1;
   int flag_2 = 1;
   int flag_3 = 1;
 
-  always_ff @(posedge CLK) begin
+  always_ff @(posedge CLK_NOC) begin
     cycle <= cycle + 1;
   end
 
@@ -130,7 +135,8 @@ module CONNECT_testbench_sample_axi4stream;
   endtask
 
   NetworkIdealAXI4StreamWrapper dut (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .m0 (m0),
     .m1 (m1),
@@ -143,7 +149,7 @@ module CONNECT_testbench_sample_axi4stream;
   );
 
   AXI4StreamMasterDevice d0m (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis  (m0),
     .start (start_m0),
@@ -153,7 +159,7 @@ module CONNECT_testbench_sample_axi4stream;
   defparam d0m.ID = 0;
 
   AXI4StreamMasterDevice d1m (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis  (m1),
     .start (start_m1),
@@ -163,7 +169,7 @@ module CONNECT_testbench_sample_axi4stream;
   defparam d1m.ID = 1;
 
   AXI4StreamMasterDevice d2m (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis  (m2),
     .start (start_m2),
@@ -173,7 +179,7 @@ module CONNECT_testbench_sample_axi4stream;
   defparam d2m.ID = 2;
 
   AXI4StreamMasterDevice d3m (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis  (m3),
     .start (start_m3),
@@ -183,7 +189,7 @@ module CONNECT_testbench_sample_axi4stream;
   defparam d3m.ID = 3;
 
   AXI4StreamSlaveDevice d0s (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis (s0)
   );
@@ -191,13 +197,15 @@ module CONNECT_testbench_sample_axi4stream;
   defparam d0s.ONLY_ACCEPT = 2;
 
   AXI4StreamSlaveDevice d1s (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis (s1)
   );
 
+  defparam d1s.ONLY_ACCEPT = 3;
+
   AXI4StreamSlaveDevice d2s (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis (s2)
   );
@@ -205,10 +213,12 @@ module CONNECT_testbench_sample_axi4stream;
   defparam d2s.ONLY_ACCEPT = 0;
 
   AXI4StreamSlaveDevice d3s (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis (s3)
   );
+
+  defparam d3s.ONLY_ACCEPT = 1;
 
   // Dump waveform for gtkwave
   initial begin

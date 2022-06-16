@@ -1,11 +1,12 @@
 `include "connect_parameters.v"
 
-`define USE_FIFO_IP
-
-`ifdef USE_FIFO_IP
-
-module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = `FLIT_WIDTH) (
-    input CLK,
+module BasicSCFIFO #(
+    parameter DEPTH               = `FLIT_BUFFER_DEPTH,
+    parameter DATA_WIDTH          = `FLIT_WIDTH,
+    parameter ALMOST_FULL_VALUE   = `FLIT_BUFFER_DEPTH - 1,
+    parameter ALMOST_EMPTY_VALUE  = 1
+  ) (
+    input CLK_NOC,
     input RST_N,
 
     // Input
@@ -16,42 +17,50 @@ module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = 
     // Output
     output [DATA_WIDTH - 1 : 0] deq_data,
     output                      deq_valid,
-    input                       deq_ready
+    input                       deq_ready,
+
+    // Full & Empty
+    output full,
+    output almost_full,
+    output empty,
+    output almost_empty
   );
 
-  logic full, empty;
+  /* ----- FIFO from Intel FPGA IP ----- */
 
-  scfifo in_port_fifo (
-    .clock        (CLK        ),
-    .sclr         (!RST_N     ),
-    .aclr         (!RST_N     ),
+  scfifo fifo (
+    .clock        (CLK_NOC      ),
+    .sclr         (!RST_N       ),
+    .aclr         (!RST_N       ),
 
     // Input
-    .data         (enq_data   ),
-    .wrreq        (enq_valid  ),
-    .full         (full       ),
+    .data         (enq_data     ),
+    .wrreq        (enq_valid    ),
+    .full         (full         ),
+    .almost_full  (almost_full  ),
 
     // Output
-    .q            (deq_data   ),
-    .rdreq        (deq_ready  ),
-    .empty        (empty      ),
+    .q            (deq_data     ),
+    .rdreq        (deq_ready    ),
+    .empty        (empty        ),
+    .almost_empty (almost_empty ),
 
     // Misc
-    .eccstatus    (),
-    .usedw        (),
-    .almost_full  (),
-    .almost_empty ()
+    .eccstatus    (             ),
+    .usedw        (             )
   );
 
-  defparam in_port_fifo.lpm_width               = DATA_WIDTH;
-  defparam in_port_fifo.lpm_widthu              = $clog2(DEPTH);
-  defparam in_port_fifo.lpm_numwords            = DEPTH;
-  defparam in_port_fifo.lpm_showahead           = "ON";
-  defparam in_port_fifo.lpm_type                = "scfifo";
-  defparam in_port_fifo.intended_device_family  = "Stratix";
-  defparam in_port_fifo.underflow_checking      = "ON";
-  defparam in_port_fifo.overflow_checking       = "ON";
-  // defparam in_port_fifo.allow_rwcycle_when_full = "ON";
+  defparam fifo.lpm_width               = DATA_WIDTH;
+  defparam fifo.lpm_widthu              = $clog2(DEPTH);
+  defparam fifo.lpm_numwords            = DEPTH;
+  defparam fifo.lpm_showahead           = "ON";
+  defparam fifo.lpm_type                = "scfifo";
+  defparam fifo.intended_device_family  = "Stratix";
+  defparam fifo.underflow_checking      = "ON";
+  defparam fifo.overflow_checking       = "ON";
+  // defparam ififo.allow_rwcycle_when_full = "ON";
+  defparam fifo.almost_full_value       = ALMOST_FULL_VALUE;
+  defparam fifo.almost_empty_value      = ALMOST_EMPTY_VALUE;
 
   assign enq_ready = !full;
   assign deq_valid = !empty;
@@ -63,7 +72,7 @@ module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = 
   reg [15 : 0] cycle = 0;
   reg [15 : 0] count = 0;
 
-  always_ff @(posedge CLK) begin
+  always_ff @(posedge CLK_NOC) begin
     cycle <= cycle + 1;
     if (enq_fire && !deq_fire)
       count <= count + 1;
@@ -71,21 +80,14 @@ module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = 
       count <= count - 1;
   end
 
-`ifdef DEBUG_FLIT_FIFO
-  always_ff @(posedge CLK) begin
-    if (enq_fire)
-      $display("%d: [ENQ] data=%x", cycle, enq_data);
-    if (deq_fire)
-      $display("%d: [DEQ] data=%x", cycle, deq_data);
-  end
-`endif
-
 endmodule
 
-`else
-
-module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = `FLIT_WIDTH) (
-    input CLK,
+module BasicDCFIFO #(
+    parameter DEPTH               = `FLIT_BUFFER_DEPTH,
+    parameter DATA_WIDTH          = `FLIT_WIDTH
+  ) (
+    input CLK_RD,
+    input CLK_WR,
     input RST_N,
 
     // Input
@@ -99,87 +101,54 @@ module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = 
     input                       deq_ready
   );
 
-  logic [DATA_WIDTH - 1 : 0]    buffer [0 : DEPTH];
-  logic [$clog2(DEPTH) - 1 : 0] enq_ptr;
-  logic [$clog2(DEPTH) - 1 : 0] deq_ptr;
-  logic                         ptr_match, empty, full, maybe_full;
-  logic                         enq_fire, deq_fire, do_enq, do_deq;
+  /* ----- FIFO from Intel FPGA IP ----- */
 
-  assign ptr_match  = (enq_ptr == deq_ptr);
-  assign empty      = ptr_match && !maybe_full;
-  assign full       = ptr_match && maybe_full;
+  logic wrfull, wrempty, rdfull, rdempty;
 
-  always_ff @(posedge CLK) begin
-    if (!RST_N) begin
-      enq_ptr <= 0;
-      deq_ptr <= 0;
-      maybe_full <= 0;
-    end else begin
-      if (do_enq)
-        enq_ptr <= enq_ptr + 1;
-      if (do_deq)
-        deq_ptr <= deq_ptr + 1;
-      if (do_enq != do_deq)
-        maybe_full <= do_enq;
-    end
-  end
+  dcfifo fifo (
+    .aclr       (!RST_N     ),
 
-  always_ff @(posedge CLK) begin
-    if (!RST_N) begin
-      for (int i = 0; i < DEPTH; i++) begin
-        buffer[i] <= 0;
-      end
-    end else begin
-      if (do_enq)
-        buffer[enq_ptr] <= enq_data;
-    end
-  end
+    // Input
+    .wrclk      (CLK_WR     ),
+    .wrreq      (enq_valid  ),
+    .data       (enq_data   ),
+    .wrfull     (wrfull     ),
+    .wrempty    (wrempty    ),
 
+    // Output
+    .rdclk      (CLK_RD     ),
+    .rdreq      (deq_ready  ),
+    .q          (deq_data   ),
+    .rdfull     (rdfull     ),
+    .rdempty    (rdempty    ),
+
+    // Misc
+    .rdusedw    (           ),
+    .wrusedw    (           ),
+    .eccstatus  (           )
+  );
+
+  defparam fifo.lpm_width               = DATA_WIDTH;
+  defparam fifo.lpm_widthu              = $clog2(DEPTH);
+  defparam fifo.lpm_numwords            = DEPTH;
+  defparam fifo.lpm_showahead           = "ON";
+  defparam fifo.lpm_type                = "dcfifo";
+  defparam fifo.intended_device_family  = "Stratix";
+  defparam fifo.underflow_checking      = "ON";
+  defparam fifo.overflow_checking       = "ON";
+
+  assign enq_ready = !wrfull;
+  assign deq_valid = !rdempty;
+
+  logic enq_fire, deq_fire;
   assign enq_fire = enq_valid && enq_ready;
   assign deq_fire = deq_valid && deq_ready;
 
-  logic [DATA_WIDTH - 1 : 0]  deq_data_;
-  logic                       deq_valid_;
-  assign deq_data   = deq_data_;
-  assign deq_valid  = deq_valid_;
-
-  always_comb begin
-    do_enq = enq_fire;
-    do_deq = deq_fire;
-    deq_data_ = buffer[deq_ptr];
-    deq_valid_ = !empty;
-
-    // Flow
-    if (empty) begin
-      if (deq_ready) begin
-        do_enq = 0;
-      end
-      do_deq = 0;
-      deq_data_ = enq_data;
-    end
-    if (enq_valid) begin
-      deq_valid_ = 1;
-    end
-  end
-
-  logic enq_ready_;
-  assign enq_ready = enq_ready_;
-
-  always_comb begin
-    enq_ready_ = !full;
-    
-    // Pipe
-    if (deq_ready) begin
-      enq_ready_ = 1;
-    end
-  end
-
 endmodule
 
-`endif
-
 module InPortFIFO (
-    input CLK,
+    input CLK_NOC,
+    input CLK_FPGA,
     input RST_N,
 
     // Input from device
@@ -191,7 +160,13 @@ module InPortFIFO (
     output [`FLIT_WIDTH - 1 : 0]  send_ports_putFlit_flit_in,
     output                        EN_send_ports_putFlit,
     input  [`VC_BITS : 0]         send_ports_getCredits,
-    output                        EN_send_ports_getCredits
+    output                        EN_send_ports_getCredits,
+
+    // Full & Empty of SCFIFO
+    output full,
+    output almost_full,
+    output empty,
+    output almost_empty
   );
 
   /* device_type can be "MASTER" or "SLAVE"
@@ -200,20 +175,39 @@ module InPortFIFO (
    */
   parameter device_type = "MASTER";
 
+  logic sc_enq_valid, sc_enq_ready;
+  logic [`FLIT_WIDTH - 1 : 0] sc_enq_data;
+
+  BasicDCFIFO in_port_dcfifo (
+    .CLK_RD       (CLK_NOC        ),
+    .CLK_WR       (CLK_FPGA       ),
+    .RST_N,
+    .enq_data     (put_flit       ),
+    .enq_valid    (put_flit_valid ),
+    .enq_ready    (put_flit_ready ),
+    .deq_data     (sc_enq_data    ),
+    .deq_valid    (sc_enq_valid   ),
+    .deq_ready    (sc_enq_ready   )
+  );
+
   logic deq_valid, deq_ready, deq_fire;
   assign deq_fire = deq_valid && deq_ready;
 
   logic [`FLIT_WIDTH - 1 : 0] deq_data;
 
-  BasicFIFO in_port_fifo (
-    .CLK,
+  BasicSCFIFO in_port_scfifo (
+    .CLK_NOC,
     .RST_N,
-    .enq_data   (put_flit       ),
-    .enq_valid  (put_flit_valid ),
-    .enq_ready  (put_flit_ready ),
-    .deq_data   (deq_data       ),
-    .deq_valid  (deq_valid      ),
-    .deq_ready  (deq_ready      )
+    .enq_data     (sc_enq_data    ),
+    .enq_valid    (sc_enq_valid   ),
+    .enq_ready    (sc_enq_ready   ),
+    .deq_data     (deq_data       ),
+    .deq_valid    (deq_valid      ),
+    .deq_ready    (deq_ready      ),
+    .full         (full           ),
+    .almost_full  (almost_full    ),
+    .empty        (empty          ),
+    .almost_empty (almost_empty   )
   );
 
   logic get_credits_valid;
@@ -235,7 +229,7 @@ module InPortFIFO (
     end
   end
 
-  always_ff @(posedge CLK) begin
+  always_ff @(posedge CLK_NOC) begin
     if (!RST_N) begin
       credit_counter <= `FLIT_BUFFER_DEPTH;
     end else begin
@@ -249,7 +243,8 @@ module InPortFIFO (
 endmodule
 
 module OutPortFIFO (
-    input CLK,
+    input CLK_NOC,
+    input CLK_FPGA,
     input RST_N,
 
     // Input from network
@@ -261,7 +256,13 @@ module OutPortFIFO (
     // Output to device
     output [`FLIT_WIDTH - 1 : 0]  get_flit,
     output                        get_flit_valid,
-    input                         get_flit_ready
+    input                         get_flit_ready,
+
+    // Full & Empty of SCFIFO
+    output full,
+    output almost_full,
+    output empty,
+    output almost_empty
   );
 
   /* device_type can be "MASTER" or "SLAVE"
@@ -272,15 +273,34 @@ module OutPortFIFO (
 
   logic enq_valid, enq_ready;
 
-  BasicFIFO out_port_fifo (
-    .CLK,
+  logic sc_deq_valid, sc_deq_ready;
+  logic [`FLIT_WIDTH - 1 : 0] sc_deq_data;
+
+  BasicSCFIFO out_port_scfifo (
+    .CLK_NOC,
     .RST_N,
-    .enq_data   (recv_ports_getFlit ),
-    .enq_valid  (enq_valid          ),
-    .enq_ready  (enq_ready          ),
-    .deq_data   (get_flit           ),
-    .deq_valid  (get_flit_valid     ),
-    .deq_ready  (get_flit_ready     )
+    .enq_data     (recv_ports_getFlit ),
+    .enq_valid    (enq_valid          ),
+    .enq_ready    (enq_ready          ),
+    .deq_data     (sc_deq_data        ),
+    .deq_valid    (sc_deq_valid       ),
+    .deq_ready    (sc_deq_ready       ),
+    .full         (                   ),
+    .almost_full  (                   ),
+    .empty        (                   ),
+    .almost_empty (                   )
+  );
+
+  BasicDCFIFO out_port_dcfifo (
+    .CLK_RD       (CLK_FPGA       ),
+    .CLK_WR       (CLK_NOC        ),
+    .RST_N,
+    .enq_data     (sc_deq_data    ),
+    .enq_valid    (sc_deq_valid   ),
+    .enq_ready    (sc_deq_ready   ),
+    .deq_data     (get_flit       ),
+    .deq_valid    (get_flit_valid ),
+    .deq_ready    (get_flit_ready )
   );
 
   assign enq_valid              = recv_ports_getFlit[`FLIT_WIDTH - 1];

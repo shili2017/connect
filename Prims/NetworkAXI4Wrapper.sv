@@ -5,7 +5,8 @@
 import axi4_pkg::*;
 
 module NetworkIdealAXI4Wrapper (
-    input CLK,
+    input CLK_NOC,
+    input CLK_FPGA,
     input RST_N,
 
     axi_interface.slave m0,
@@ -122,7 +123,7 @@ module NetworkIdealAXI4Wrapper (
   wire                        get_flit_3_valid;
   wire                        get_flit_3_ready;
 
-always_ff @(posedge CLK) begin
+always_ff @(posedge CLK_NOC) begin
     cycle <= cycle + 1;
 
 `ifdef DEBUG_PORT_FLIT
@@ -242,7 +243,8 @@ always_ff @(posedge CLK) begin
   end
 
   InPortFIFO b0_in_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .put_flit                   (put_flit_0                   ),
     .put_flit_valid             (put_flit_0_valid             ),
@@ -250,13 +252,18 @@ always_ff @(posedge CLK) begin
     .send_ports_putFlit_flit_in (send_ports_0_putFlit_flit_in ),
     .EN_send_ports_putFlit      (EN_send_ports_0_putFlit      ),
     .send_ports_getCredits      (send_ports_0_getCredits      ),
-    .EN_send_ports_getCredits   (EN_send_ports_0_getCredits   )
+    .EN_send_ports_getCredits   (EN_send_ports_0_getCredits   ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b0_in_fifo.device_type = "MASTER";
 
   OutPortFIFO b0_out_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .recv_ports_getFlit         (recv_ports_0_getFlit         ),
     .EN_recv_ports_getFlit      (EN_recv_ports_0_getFlit      ),
@@ -264,13 +271,17 @@ always_ff @(posedge CLK) begin
     .EN_recv_ports_putCredits   (EN_recv_ports_0_putCredits   ),
     .get_flit                   (get_flit_0                   ),
     .get_flit_valid             (get_flit_0_valid             ),
-    .get_flit_ready             (get_flit_0_ready             )
+    .get_flit_ready             (get_flit_0_ready             ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b0_out_fifo.device_type = "MASTER";
 
   FlitSerializer b0_serializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (put_flit_0_axi4        ),
     .in_flit_valid  (put_flit_0_axi4_valid  ),
@@ -284,7 +295,7 @@ always_ff @(posedge CLK) begin
   defparam b0_serializer.IN_FLIT_WIDTH = AXI4_FLIT_WIDTH;
 
   FlitDeserializer b0_deserializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (get_flit_0             ),
     .in_flit_valid  (get_flit_0_valid       ),
@@ -298,7 +309,7 @@ always_ff @(posedge CLK) begin
   defparam b0_deserializer.OUT_FLIT_WIDTH = AXI4_FLIT_WIDTH;
 
   AXI4MasterBridge b0 (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axi            (m0                    ),
     .put_flit       (put_flit_0_axi4       ),
@@ -310,7 +321,8 @@ always_ff @(posedge CLK) begin
   );
 
   InPortFIFO b1_in_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .put_flit                   (put_flit_1                   ),
     .put_flit_valid             (put_flit_1_valid             ),
@@ -318,13 +330,18 @@ always_ff @(posedge CLK) begin
     .send_ports_putFlit_flit_in (send_ports_1_putFlit_flit_in ),
     .EN_send_ports_putFlit      (EN_send_ports_1_putFlit      ),
     .send_ports_getCredits      (send_ports_1_getCredits      ),
-    .EN_send_ports_getCredits   (EN_send_ports_1_getCredits   )
+    .EN_send_ports_getCredits   (EN_send_ports_1_getCredits   ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b1_in_fifo.device_type = "MASTER";
 
   OutPortFIFO b1_out_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .recv_ports_getFlit         (recv_ports_1_getFlit         ),
     .EN_recv_ports_getFlit      (EN_recv_ports_1_getFlit      ),
@@ -332,13 +349,17 @@ always_ff @(posedge CLK) begin
     .EN_recv_ports_putCredits   (EN_recv_ports_1_putCredits   ),
     .get_flit                   (get_flit_1                   ),
     .get_flit_valid             (get_flit_1_valid             ),
-    .get_flit_ready             (get_flit_1_ready             )
+    .get_flit_ready             (get_flit_1_ready             ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b1_out_fifo.device_type = "MASTER";
 
   FlitSerializer b1_serializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (put_flit_1_axi4        ),
     .in_flit_valid  (put_flit_1_axi4_valid  ),
@@ -352,7 +373,7 @@ always_ff @(posedge CLK) begin
   defparam b1_serializer.IN_FLIT_WIDTH = AXI4_FLIT_WIDTH;
 
   FlitDeserializer b1_deserializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (get_flit_1             ),
     .in_flit_valid  (get_flit_1_valid       ),
@@ -366,7 +387,7 @@ always_ff @(posedge CLK) begin
   defparam b1_deserializer.OUT_FLIT_WIDTH = AXI4_FLIT_WIDTH;
 
   AXI4MasterBridge b1 (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axi            (m1                    ),
     .put_flit       (put_flit_1_axi4       ),
@@ -378,7 +399,8 @@ always_ff @(posedge CLK) begin
   );
 
   InPortFIFO b2_in_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .put_flit                   (put_flit_2                   ),
     .put_flit_valid             (put_flit_2_valid             ),
@@ -386,13 +408,18 @@ always_ff @(posedge CLK) begin
     .send_ports_putFlit_flit_in (send_ports_2_putFlit_flit_in ),
     .EN_send_ports_putFlit      (EN_send_ports_2_putFlit      ),
     .send_ports_getCredits      (send_ports_2_getCredits      ),
-    .EN_send_ports_getCredits   (EN_send_ports_2_getCredits   )
+    .EN_send_ports_getCredits   (EN_send_ports_2_getCredits   ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b2_in_fifo.device_type = "SLAVE";
 
   OutPortFIFO b2_out_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .recv_ports_getFlit         (recv_ports_2_getFlit         ),
     .EN_recv_ports_getFlit      (EN_recv_ports_2_getFlit      ),
@@ -400,13 +427,17 @@ always_ff @(posedge CLK) begin
     .EN_recv_ports_putCredits   (EN_recv_ports_2_putCredits   ),
     .get_flit                   (get_flit_2                   ),
     .get_flit_valid             (get_flit_2_valid             ),
-    .get_flit_ready             (get_flit_2_ready             )
+    .get_flit_ready             (get_flit_2_ready             ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b2_out_fifo.device_type = "SLAVE";
 
   FlitSerializer b2_serializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (put_flit_2_axi4        ),
     .in_flit_valid  (put_flit_2_axi4_valid  ),
@@ -420,7 +451,7 @@ always_ff @(posedge CLK) begin
   defparam b2_serializer.IN_FLIT_WIDTH = AXI4_FLIT_WIDTH;
 
   FlitDeserializer b2_deserializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (get_flit_2             ),
     .in_flit_valid  (get_flit_2_valid       ),
@@ -434,7 +465,7 @@ always_ff @(posedge CLK) begin
   defparam b2_deserializer.OUT_FLIT_WIDTH = AXI4_FLIT_WIDTH;
 
   AXI4SlaveBridge b2 (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axi            (s0                    ),
     .put_flit       (put_flit_2_axi4       ),
@@ -446,7 +477,8 @@ always_ff @(posedge CLK) begin
   );
 
   InPortFIFO b3_in_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .put_flit                   (put_flit_3                   ),
     .put_flit_valid             (put_flit_3_valid             ),
@@ -454,13 +486,18 @@ always_ff @(posedge CLK) begin
     .send_ports_putFlit_flit_in (send_ports_3_putFlit_flit_in ),
     .EN_send_ports_putFlit      (EN_send_ports_3_putFlit      ),
     .send_ports_getCredits      (send_ports_3_getCredits      ),
-    .EN_send_ports_getCredits   (EN_send_ports_3_getCredits   )
+    .EN_send_ports_getCredits   (EN_send_ports_3_getCredits   ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b3_in_fifo.device_type = "SLAVE";
 
   OutPortFIFO b3_out_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .recv_ports_getFlit         (recv_ports_3_getFlit         ),
     .EN_recv_ports_getFlit      (EN_recv_ports_3_getFlit      ),
@@ -468,13 +505,17 @@ always_ff @(posedge CLK) begin
     .EN_recv_ports_putCredits   (EN_recv_ports_3_putCredits   ),
     .get_flit                   (get_flit_3                   ),
     .get_flit_valid             (get_flit_3_valid             ),
-    .get_flit_ready             (get_flit_3_ready             )
+    .get_flit_ready             (get_flit_3_ready             ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b3_out_fifo.device_type = "SLAVE";
 
   FlitSerializer b3_serializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (put_flit_3_axi4        ),
     .in_flit_valid  (put_flit_3_axi4_valid  ),
@@ -488,7 +529,7 @@ always_ff @(posedge CLK) begin
   defparam b3_serializer.IN_FLIT_WIDTH = AXI4_FLIT_WIDTH;
 
   FlitDeserializer b3_deserializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (get_flit_3             ),
     .in_flit_valid  (get_flit_3_valid       ),
@@ -502,7 +543,7 @@ always_ff @(posedge CLK) begin
   defparam b3_deserializer.OUT_FLIT_WIDTH = AXI4_FLIT_WIDTH;
 
   AXI4SlaveBridge b3 (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axi            (s1                    ),
     .put_flit       (put_flit_3_axi4       ),
@@ -514,7 +555,7 @@ always_ff @(posedge CLK) begin
   );
 
   mkNetwork network (
-    .CLK,
+    .CLK (CLK_NOC),
     .RST_N,
 
     .send_ports_0_putFlit_flit_in,

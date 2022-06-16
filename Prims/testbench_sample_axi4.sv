@@ -7,11 +7,11 @@
 import axi4_pkg::*;
 
 module CONNECT_testbench_sample_axi4;
-  parameter HalfClkPeriod = 5;
+  parameter HalfClkPeriod = 20;
   localparam ClkPeriod = 2 * HalfClkPeriod;
-  localparam test_cycles = 50;
+  localparam ClkDividerFactor = 4;
 
-  reg CLK;
+  reg CLK_NOC, CLK_FPGA;
   reg RST_N;
 
   axi_interface m0();
@@ -23,8 +23,12 @@ module CONNECT_testbench_sample_axi4;
   integer i;
 
   // Generate Clock
-  initial CLK = 0;
-  always #(HalfClkPeriod) CLK = ~CLK;
+  initial begin
+    CLK_NOC = 0;
+    CLK_FPGA = 0;
+  end
+  always #(HalfClkPeriod / ClkDividerFactor) CLK_NOC = ~CLK_NOC;
+  always #(HalfClkPeriod) CLK_FPGA = ~CLK_FPGA;
 
   reg start_read_m0, start_write_m0;
   reg start_read_m1, start_write_m1;
@@ -38,7 +42,7 @@ module CONNECT_testbench_sample_axi4;
 
     $display("---- Performing Reset ----");
     RST_N = 0; // perform reset (active low) 
-    #(5 * ClkPeriod+HalfClkPeriod); 
+    #(5 * ClkPeriod + HalfClkPeriod); 
     RST_N = 1;
     #(HalfClkPeriod);
 
@@ -64,7 +68,7 @@ module CONNECT_testbench_sample_axi4;
   axi_data_t data = 64'hdeadbeefdeadbeef;
   int flag_w = 1, flag_r = 1;
 
-  always_ff @(posedge CLK) begin
+  always_ff @(posedge CLK_NOC) begin
     cycle <= cycle + 1;
   end
 
@@ -89,7 +93,8 @@ module CONNECT_testbench_sample_axi4;
   endtask : test_read
 
   NetworkIdealAXI4Wrapper dut (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .m0 (m0),
     .m1 (m1),
@@ -98,7 +103,7 @@ module CONNECT_testbench_sample_axi4;
   );
 
   AXI4MasterDevice d0 (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axi         (m0),
     .start_read  (start_read_m0),
@@ -109,7 +114,7 @@ module CONNECT_testbench_sample_axi4;
   defparam d0.ID = 0;
 
   AXI4MasterDevice d1 (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axi         (m1),
     .start_read  (start_read_m1),
@@ -120,13 +125,13 @@ module CONNECT_testbench_sample_axi4;
   defparam d1.ID = 1;
 
   AXI4SlaveDevice d2 (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axi (s0)
   );
 
   AXI4SlaveDevice d3 (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axi (s1)
   );

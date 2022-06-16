@@ -5,7 +5,8 @@
 import axi4_pkg::*;
 
 module NetworkIdealAXI4StreamWrapper (
-    input CLK,
+    input CLK_NOC,  // Fast clock for ASIC
+    input CLK_FPGA, // Slow clock for FPGA
     input RST_N,
 
     axi_stream_interface.slave m0,
@@ -126,7 +127,7 @@ module NetworkIdealAXI4StreamWrapper (
   wire                        get_flit_3_valid;
   wire                        get_flit_3_ready;
 
-  always_ff @(posedge CLK) begin
+  always_ff @(posedge CLK_NOC) begin
     cycle <= cycle + 1;
 
 `ifdef DEBUG_PORT_FLIT
@@ -246,7 +247,8 @@ module NetworkIdealAXI4StreamWrapper (
   end
 
   InPortFIFO b0m_in_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .put_flit                   (put_flit_0                   ),
     .put_flit_valid             (put_flit_0_valid             ),
@@ -254,13 +256,18 @@ module NetworkIdealAXI4StreamWrapper (
     .send_ports_putFlit_flit_in (send_ports_0_putFlit_flit_in ),
     .EN_send_ports_putFlit      (EN_send_ports_0_putFlit      ),
     .send_ports_getCredits      (send_ports_0_getCredits      ),
-    .EN_send_ports_getCredits   (EN_send_ports_0_getCredits   )
+    .EN_send_ports_getCredits   (EN_send_ports_0_getCredits   ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b0m_in_fifo.device_type = "MASTER";
 
   OutPortFIFO b0s_out_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .recv_ports_getFlit         (recv_ports_0_getFlit         ),
     .EN_recv_ports_getFlit      (EN_recv_ports_0_getFlit      ),
@@ -268,13 +275,17 @@ module NetworkIdealAXI4StreamWrapper (
     .EN_recv_ports_putCredits   (EN_recv_ports_0_putCredits   ),
     .get_flit                   (get_flit_0                   ),
     .get_flit_valid             (get_flit_0_valid             ),
-    .get_flit_ready             (get_flit_0_ready             )
+    .get_flit_ready             (get_flit_0_ready             ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b0s_out_fifo.device_type = "SLAVE";
 
   AXI4StreamMasterBridge b0m (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis           (m0                     ),
     .put_flit       (put_flit_0_axi4s       ),
@@ -283,7 +294,7 @@ module NetworkIdealAXI4StreamWrapper (
   );
 
   FlitSerializer b0m_serializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (put_flit_0_axi4s       ),
     .in_flit_valid  (put_flit_0_axi4s_valid ),
@@ -297,7 +308,7 @@ module NetworkIdealAXI4StreamWrapper (
   defparam b0m_serializer.IN_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   AXI4StreamSlaveBridge b0s (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis           (s0                     ),
     .get_flit       (get_flit_0_axi4s       ),
@@ -306,7 +317,7 @@ module NetworkIdealAXI4StreamWrapper (
   );
 
   FlitDeserializer b0s_deserializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (get_flit_0             ),
     .in_flit_valid  (get_flit_0_valid       ),
@@ -320,7 +331,8 @@ module NetworkIdealAXI4StreamWrapper (
   defparam b0s_deserializer.OUT_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   InPortFIFO b1m_in_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .put_flit                   (put_flit_1                   ),
     .put_flit_valid             (put_flit_1_valid             ),
@@ -328,13 +340,18 @@ module NetworkIdealAXI4StreamWrapper (
     .send_ports_putFlit_flit_in (send_ports_1_putFlit_flit_in ),
     .EN_send_ports_putFlit      (EN_send_ports_1_putFlit      ),
     .send_ports_getCredits      (send_ports_1_getCredits      ),
-    .EN_send_ports_getCredits   (EN_send_ports_1_getCredits   )
+    .EN_send_ports_getCredits   (EN_send_ports_1_getCredits   ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b1m_in_fifo.device_type = "MASTER";
 
   OutPortFIFO b1s_out_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .recv_ports_getFlit         (recv_ports_1_getFlit         ),
     .EN_recv_ports_getFlit      (EN_recv_ports_1_getFlit      ),
@@ -342,13 +359,17 @@ module NetworkIdealAXI4StreamWrapper (
     .EN_recv_ports_putCredits   (EN_recv_ports_1_putCredits   ),
     .get_flit                   (get_flit_1                   ),
     .get_flit_valid             (get_flit_1_valid             ),
-    .get_flit_ready             (get_flit_1_ready             )
+    .get_flit_ready             (get_flit_1_ready             ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b1s_out_fifo.device_type = "SLAVE";
 
   AXI4StreamMasterBridge b1m (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis           (m1                     ),
     .put_flit       (put_flit_1_axi4s       ),
@@ -357,7 +378,7 @@ module NetworkIdealAXI4StreamWrapper (
   );
 
   FlitSerializer b1m_serializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (put_flit_1_axi4s       ),
     .in_flit_valid  (put_flit_1_axi4s_valid ),
@@ -371,7 +392,7 @@ module NetworkIdealAXI4StreamWrapper (
   defparam b1m_serializer.IN_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   AXI4StreamSlaveBridge b1s (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis           (s1                     ),
     .get_flit       (get_flit_1_axi4s       ),
@@ -380,7 +401,7 @@ module NetworkIdealAXI4StreamWrapper (
   );
 
   FlitDeserializer b1s_deserializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (get_flit_1             ),
     .in_flit_valid  (get_flit_1_valid       ),
@@ -394,7 +415,8 @@ module NetworkIdealAXI4StreamWrapper (
   defparam b1s_deserializer.OUT_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   InPortFIFO b2m_in_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .put_flit                   (put_flit_2                   ),
     .put_flit_valid             (put_flit_2_valid             ),
@@ -402,13 +424,18 @@ module NetworkIdealAXI4StreamWrapper (
     .send_ports_putFlit_flit_in (send_ports_2_putFlit_flit_in ),
     .EN_send_ports_putFlit      (EN_send_ports_2_putFlit      ),
     .send_ports_getCredits      (send_ports_2_getCredits      ),
-    .EN_send_ports_getCredits   (EN_send_ports_2_getCredits   )
+    .EN_send_ports_getCredits   (EN_send_ports_2_getCredits   ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b2m_in_fifo.device_type = "MASTER";
 
   OutPortFIFO b2s_out_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .recv_ports_getFlit         (recv_ports_2_getFlit         ),
     .EN_recv_ports_getFlit      (EN_recv_ports_2_getFlit      ),
@@ -416,14 +443,17 @@ module NetworkIdealAXI4StreamWrapper (
     .EN_recv_ports_putCredits   (EN_recv_ports_2_putCredits   ),
     .get_flit                   (get_flit_2                   ),
     .get_flit_valid             (get_flit_2_valid             ),
-    .get_flit_ready             (get_flit_2_ready             )
+    .get_flit_ready             (get_flit_2_ready             ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b2s_out_fifo.device_type = "SLAVE";
-
   
   AXI4StreamMasterBridge b2m (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis           (m2                     ),
     .put_flit       (put_flit_2_axi4s       ),
@@ -432,7 +462,7 @@ module NetworkIdealAXI4StreamWrapper (
   );
 
   FlitSerializer b2m_serializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (put_flit_2_axi4s       ),
     .in_flit_valid  (put_flit_2_axi4s_valid ),
@@ -446,7 +476,7 @@ module NetworkIdealAXI4StreamWrapper (
   defparam b2m_serializer.IN_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   AXI4StreamSlaveBridge b2s (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis           (s2                     ),
     .get_flit       (get_flit_2_axi4s       ),
@@ -455,7 +485,7 @@ module NetworkIdealAXI4StreamWrapper (
   );
 
   FlitDeserializer b2s_deserializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (get_flit_2             ),
     .in_flit_valid  (get_flit_2_valid       ),
@@ -469,7 +499,8 @@ module NetworkIdealAXI4StreamWrapper (
   defparam b2s_deserializer.OUT_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   InPortFIFO b3m_in_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .put_flit                   (put_flit_3                   ),
     .put_flit_valid             (put_flit_3_valid             ),
@@ -477,13 +508,18 @@ module NetworkIdealAXI4StreamWrapper (
     .send_ports_putFlit_flit_in (send_ports_3_putFlit_flit_in ),
     .EN_send_ports_putFlit      (EN_send_ports_3_putFlit      ),
     .send_ports_getCredits      (send_ports_3_getCredits      ),
-    .EN_send_ports_getCredits   (EN_send_ports_3_getCredits   )
+    .EN_send_ports_getCredits   (EN_send_ports_3_getCredits   ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b3m_in_fifo.device_type = "MASTER";
 
   OutPortFIFO b3s_out_fifo (
-    .CLK,
+    .CLK_NOC,
+    .CLK_FPGA,
     .RST_N,
     .recv_ports_getFlit         (recv_ports_3_getFlit         ),
     .EN_recv_ports_getFlit      (EN_recv_ports_3_getFlit      ),
@@ -491,13 +527,17 @@ module NetworkIdealAXI4StreamWrapper (
     .EN_recv_ports_putCredits   (EN_recv_ports_3_putCredits   ),
     .get_flit                   (get_flit_3                   ),
     .get_flit_valid             (get_flit_3_valid             ),
-    .get_flit_ready             (get_flit_3_ready             )
+    .get_flit_ready             (get_flit_3_ready             ),
+    .full                       (                             ),
+    .almost_full                (                             ),
+    .empty                      (                             ),
+    .almost_empty               (                             )
   );
 
   defparam b3s_out_fifo.device_type = "SLAVE";
 
   AXI4StreamMasterBridge b3m (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis           (m3                     ),
     .put_flit       (put_flit_3_axi4s       ),
@@ -506,7 +546,7 @@ module NetworkIdealAXI4StreamWrapper (
   );
 
   FlitSerializer b3m_serializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (put_flit_3_axi4s       ),
     .in_flit_valid  (put_flit_3_axi4s_valid ),
@@ -520,7 +560,7 @@ module NetworkIdealAXI4StreamWrapper (
   defparam b3m_serializer.IN_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   AXI4StreamSlaveBridge b3s (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .axis           (s3                     ),
     .get_flit       (get_flit_3_axi4s       ),
@@ -529,7 +569,7 @@ module NetworkIdealAXI4StreamWrapper (
   );
 
   FlitDeserializer b3s_deserializer (
-    .CLK,
+    .CLK (CLK_FPGA),
     .RST_N,
     .in_flit        (get_flit_3             ),
     .in_flit_valid  (get_flit_3_valid       ),
@@ -543,7 +583,7 @@ module NetworkIdealAXI4StreamWrapper (
   defparam b3s_deserializer.OUT_FLIT_WIDTH = AXI4S_FLIT_WIDTH;
 
   mkNetwork network (
-    .CLK,
+    .CLK (CLK_NOC),
     .RST_N,
 
     .send_ports_0_putFlit_flit_in,
