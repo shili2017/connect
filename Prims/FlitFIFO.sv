@@ -1,10 +1,8 @@
-`include "connect_parameters.v"
-
 //`define USE_FIFO_IP
 
 `ifdef USE_FIFO_IP
 
-module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = `FLIT_WIDTH) (
+module BasicFIFO #(parameter DEPTH = 8, parameter DATA_WIDTH = 261) (
     input CLK,
     input RST_N,
 
@@ -84,7 +82,7 @@ endmodule
 
 `else
 
-module BasicFIFO #(parameter DEPTH = `FLIT_BUFFER_DEPTH, parameter DATA_WIDTH = `FLIT_WIDTH) (
+module BasicFIFO #(parameter DEPTH = 8, parameter DATA_WIDTH = 261) (
     input CLK,
     input RST_N,
 
@@ -178,19 +176,19 @@ endmodule
 
 `endif
 
-module InPortFIFO (
+module InPortFIFO #(DEPTH = 8, VC_BITS = 2, FLIT_WIDTH = 261) (
     input CLK,
     input RST_N,
 
     // Input from device
-    input  [`FLIT_WIDTH - 1 : 0]  put_flit,
+    input  [FLIT_WIDTH - 1 : 0]  put_flit,
     input                         put_flit_valid,
     output                        put_flit_ready,
 
     // Output to network
-    output [`FLIT_WIDTH - 1 : 0]  send_ports_putFlit_flit_in,
+    output [FLIT_WIDTH - 1 : 0]  send_ports_putFlit_flit_in,
     output                        EN_send_ports_putFlit,
-    input  [`VC_BITS : 0]         send_ports_getCredits,
+    input  [VC_BITS : 0]         send_ports_getCredits,
     output                        EN_send_ports_getCredits
   );
 
@@ -204,9 +202,9 @@ module InPortFIFO (
   logic deq_valid, deq_ready, deq_fire;
   assign deq_fire = deq_valid && deq_ready;
 
-  logic [`FLIT_WIDTH - 1 : 0] deq_data;
+  logic [FLIT_WIDTH - 1 : 0] deq_data;
 
-  BasicFIFO in_port_fifo (
+  BasicFIFO in_port_fifo #(.DEPTH(DEPTH), .DATA_WIDTH(FLIT_WIDTH)) (
     .CLK,
     .RST_N,
     .enq_data   (put_flit       ),
@@ -218,27 +216,27 @@ module InPortFIFO (
   );
 
   logic get_credits_valid;
-  logic [$clog2(`FLIT_BUFFER_DEPTH) : 0] credit_counter;
+  logic [$clog2(DEPTH) : 0] credit_counter;
 
   assign deq_ready                  = (credit_counter != 0);
-  assign send_ports_putFlit_flit_in = {EN_send_ports_putFlit, deq_data[`FLIT_WIDTH - 2 : 0]};
+  assign send_ports_putFlit_flit_in = {EN_send_ports_putFlit, deq_data[FLIT_WIDTH - 2 : 0]};
   assign EN_send_ports_putFlit      = deq_valid && deq_ready;
   assign EN_send_ports_getCredits   = 1;
 
   always_comb begin
     get_credits_valid = 0;
     if (device_type == "MASTER") begin
-      get_credits_valid = send_ports_getCredits[`VC_BITS] &&
-                          (send_ports_getCredits[`VC_BITS - 1 : 0] == 1'b1);
+      get_credits_valid = send_ports_getCredits[VC_BITS] &&
+                          (send_ports_getCredits[VC_BITS - 1 : 0] == 1'b1);
     end else begin
-      get_credits_valid = send_ports_getCredits[`VC_BITS] &&
-                          (send_ports_getCredits[`VC_BITS - 1 : 0] == 1'b0);
+      get_credits_valid = send_ports_getCredits[VC_BITS] &&
+                          (send_ports_getCredits[VC_BITS - 1 : 0] == 1'b0);
     end
   end
 
   always_ff @(posedge CLK) begin
     if (!RST_N) begin
-      credit_counter <= `FLIT_BUFFER_DEPTH;
+      credit_counter <= DEPTH;
     end else begin
       if (deq_fire && !get_credits_valid)
         credit_counter <= credit_counter - 1;
@@ -249,18 +247,18 @@ module InPortFIFO (
 
 endmodule
 
-module OutPortFIFO (
+module OutPortFIFO #(DEPTH = 8, VC_BITS = 2, FLIT_WIDTH = 261) (
     input CLK,
     input RST_N,
 
     // Input from network
-    input  [`FLIT_WIDTH - 1 : 0]  recv_ports_getFlit,
+    input  [FLIT_WIDTH - 1 : 0]  recv_ports_getFlit,
     output                        EN_recv_ports_getFlit,
-    output [`VC_BITS : 0]         recv_ports_putCredits_cr_in,
+    output [VC_BITS : 0]         recv_ports_putCredits_cr_in,
     output                        EN_recv_ports_putCredits,
 
     // Output to device
-    output [`FLIT_WIDTH - 1 : 0]  get_flit,
+    output [FLIT_WIDTH - 1 : 0]  get_flit,
     output                        get_flit_valid,
     input                         get_flit_ready
   );
@@ -274,7 +272,7 @@ module OutPortFIFO (
 
   logic enq_valid, enq_ready;
 
-  BasicFIFO out_port_fifo (
+  BasicFIFO out_port_fifo #(.DEPTH(DEPTH), .DATA_WIDTH(FLIT_WIDTH)) (
     .CLK,
     .RST_N,
     .enq_data   (recv_ports_getFlit ),
@@ -285,7 +283,7 @@ module OutPortFIFO (
     .deq_ready  (get_flit_ready     )
   );
 
-  assign enq_valid              = recv_ports_getFlit[`FLIT_WIDTH - 1];
+  assign enq_valid              = recv_ports_getFlit[FLIT_WIDTH - 1];
   assign EN_recv_ports_getFlit  = enq_ready;
 
   logic vc;
