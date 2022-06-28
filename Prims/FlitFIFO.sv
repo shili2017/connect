@@ -176,7 +176,7 @@ endmodule
 
 `endif
 
-module InPortFIFO #(DEPTH = 8, VC_BITS = 2, FLIT_WIDTH = 261) (
+module InPortFIFO #(parameter DEPTH = 8, parameter VC_BITS = 2, parameter FLIT_WIDTH = 261) (
     input CLK,
     input RST_N,
 
@@ -204,7 +204,7 @@ module InPortFIFO #(DEPTH = 8, VC_BITS = 2, FLIT_WIDTH = 261) (
 
   logic [FLIT_WIDTH - 1 : 0] deq_data;
 
-  BasicFIFO in_port_fifo #(.DEPTH(DEPTH), .DATA_WIDTH(FLIT_WIDTH)) (
+  BasicFIFO #(.DEPTH(DEPTH), .DATA_WIDTH(FLIT_WIDTH)) in_port_fifo (
     .CLK,
     .RST_N,
     .enq_data   (put_flit       ),
@@ -247,7 +247,7 @@ module InPortFIFO #(DEPTH = 8, VC_BITS = 2, FLIT_WIDTH = 261) (
 
 endmodule
 
-module OutPortFIFO #(DEPTH = 8, VC_BITS = 2, FLIT_WIDTH = 261) (
+module OutPortFIFO #(parameter DEPTH = 8, parameter VC_BITS = 2, parameter FLIT_WIDTH = 261) (
     input CLK,
     input RST_N,
 
@@ -272,7 +272,7 @@ module OutPortFIFO #(DEPTH = 8, VC_BITS = 2, FLIT_WIDTH = 261) (
 
   logic enq_valid, enq_ready;
 
-  BasicFIFO out_port_fifo #(.DEPTH(DEPTH), .DATA_WIDTH(FLIT_WIDTH)) (
+  BasicFIFO#(.DEPTH(DEPTH), .DATA_WIDTH(FLIT_WIDTH)) out_port_fifo (
     .CLK,
     .RST_N,
     .enq_data   (recv_ports_getFlit ),
